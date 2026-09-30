@@ -1,0 +1,97 @@
+{
+  "nodes": {
+    "flake-utils": {
+      "inputs": {
+        "systems": "systems"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "fstar": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1780217309,
+        "narHash": "sha256-dl9cMGU60tRTCpKu/PfXUBcsRmvaSNfBEcu8FVHTs4s=",
+        "owner": "dysinger",
+        "repo": "fstar",
+        "rev": "cdbf598b77f64387463097b5ea7a34b63aac6fd9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "dysinger",
+        "ref": "v2025.10.06+lsp",
+        "repo": "fstar",
+        "type": "github"
+      }
+    },
+    "karamel": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1782043244,
+        "narHash": "sha256-yQtdPDrxMwW12gDJWO1wCj5wBBYKcUjiYC/VIUJ3Uy0=",
+        "owner": "dysinger",
+        "repo": "karamel",
+        "rev": "583def9d6328e03985aaa5aa18fc4f23365d2f3c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "dysinger",
+        "ref": "coextract",
+        "repo": "karamel",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1780538644,
+        "narHash": "sha256-/XZ8TdKUecbDTbm6iDTBdFoRH/wnGHTRpwsAMK3JfvA=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "c31cf09f1fa68fafb78981a099c196826aeeef78",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "c31cf09",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "fstar": "fstar",
+        "karamel": "karamel",
+        "nixpkgs": "nixpkgs"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
