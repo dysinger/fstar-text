@@ -107,9 +107,9 @@
 
       in
       {
-        packages.default = _pkg.text-krml;
-        packages.text-checked = _pkg.text-checked;
-        packages.text-krml = _pkg.text-krml;
+        packages.default = _pkg.krml;
+        packages.checked = _pkg.checked;
+        packages.krml = _pkg.krml;
 
         devShells.default = pkgs.mkShell {
           dontDetectOcamlConflicts = true;

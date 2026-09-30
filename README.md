@@ -72,8 +72,8 @@ make -C text krml     # Extract Low* to C
 Or via nix:
 
 ```sh
-nix build .#text-checked
-nix build .#text-krml
+nix build .#checked
+nix build .#krml
 ```
 
 ## Test coverage

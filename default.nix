@@ -6,7 +6,7 @@
 # Takes pkgs with fstar, karamel, fstar-checked in scope, plus the codec
 # dependency's checked output + source path (injected from the flake).
 #
-# Returns { text-checked; text-krml }.
+# Returns { checked; krml }.
 
 { pkgs, codec-checked, codec-src }:
 
@@ -38,7 +38,7 @@ let
     "Data.Text.Codec.Test.Integration"
   ];
 
-  text-checked = stdenv.mkDerivation {
+  checked = stdenv.mkDerivation {
     pname = "text-checked";
     version = "0.1.0";
     src = ./.;
@@ -66,14 +66,14 @@ let
     installPhase = "true";
   };
 
-  text-krml = stdenv.mkDerivation {
+  krml = stdenv.mkDerivation {
     pname = "text-krml";
     version = "0.1.0";
     src = ./.;
     nativeBuildInputs = [ fstar ];
     buildPhase = ''
       mkdir -p $out
-      cp ${text-checked}/*.checked $out/ 2>/dev/null || true
+      cp ${checked}/*.checked $out/ 2>/dev/null || true
       cp ${codec-checked}/*.checked $out/ 2>/dev/null || true
       cp ${fstar-checked}/*.checked $out/ 2>/dev/null || true
 
@@ -92,5 +92,5 @@ let
   };
 in
 {
-  inherit text-checked text-krml;
+  inherit checked krml;
 }
