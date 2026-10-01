@@ -37,7 +37,7 @@ The KaRaMeL→Custard port is complete and verified 0-admit.  The old
 
 | Target | Status | Output |
 |---|---|---|
-| `checked` | ✅ GREEN 0-admit | 15 modules verified (7 src + 8 test) |
+| `checked` | ✅ GREEN 0-admit | 14 modules verified (7 src + 7 test) |
 | `native` (C) | ✅ GREEN | `Custard.c`/`Custard.h`/`text.h`, `libtext.{dylib,a}` (C11, no karamel) |
 | `ocaml` | ✅ GREEN | findlib `text-ocaml` |
 | `fsharp` (.NET) | ✅ GREEN | `Custard.dll` (.NET 10) |

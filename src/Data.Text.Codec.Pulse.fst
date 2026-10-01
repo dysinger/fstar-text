@@ -176,8 +176,8 @@ fn decode (buf: A.array U8.t) (off: U32.t)
 let lemma_roundtrip (t: text_enc) : Lemma (tag_to_type (tag_of t) == Some t) =
   match t with
   | TE_ASCII -> ()
-  | TE_UTF16 -> ()
   | TE_UTF8 -> ()
+  | TE_UTF16 -> ()
 
 (** [lemma_pulse_roundtrip t buf off] — encode then decode a tag roundtrips.
 

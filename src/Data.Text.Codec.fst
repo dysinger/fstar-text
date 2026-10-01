@@ -177,15 +177,6 @@ let text_chars_rest_cond (max: nat) (pred: FStar.Char.char -> bool) (s: string) 
 
 (* ── Roundtrip lemmas (alphabetical) ───────────────────────────────── *)
 
-(** [lemma_text_chars_dec_err_bound max pred input] — error-position bound for
-    [text_chars_dec].  The only error is the empty-match case, at position 0,
-    so the bound holds trivially. *)
-let lemma_text_chars_dec_err_bound (max: nat) (pred: FStar.Char.char -> bool) (input: byte_seq) : Lemma
-  (ensures (match text_chars_dec max pred input with
-            | Inl err -> err.err_pos <= Seq.length input
-            | _ -> True))
-  = ()
-
 (** [lemma_text_chars_dec_consumed_bound max pred input] — consumed-count bound
     for [text_chars_dec].  The consumed count is exactly [|scan|], which
     [lemma_scan_consumed_le_len] bounds by the input length. *)
@@ -199,6 +190,15 @@ let lemma_text_chars_dec_consumed_bound (max: nat) (pred: FStar.Char.char -> boo
       ()
     end else ()
 #pop-options
+
+(** [lemma_text_chars_dec_err_bound max pred input] — error-position bound for
+    [text_chars_dec].  The only error is the empty-match case, at position 0,
+    so the bound holds trivially. *)
+let lemma_text_chars_dec_err_bound (max: nat) (pred: FStar.Char.char -> bool) (input: byte_seq) : Lemma
+  (ensures (match text_chars_dec max pred input with
+            | Inl err -> err.err_pos <= Seq.length input
+            | _ -> True))
+  = ()
 
 (** [lemma_text_chars_roundtrip max pred s r] — roundtrip proof for [text_chars].
 

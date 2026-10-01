@@ -14,7 +14,9 @@ Zero admits.  Zero magic.  All roundtrip proofs are structural.
 Data.Text.Codec          — text_chars combinator + scan/roundtrip lemmas
 Data.Text.Codec.Chars    — pure char↔byte maps + ASCII roundtrip induction
 Data.Text.Codec.Delims   — CRLF + SP delimiter codecs
+Data.Text.Codec.Zero     — empty-aware text_chars0 combinator
 Data.Text.Codec.UTF8     — RFC 3629 UTF-8 encode/decode + roundtrip proof
+Data.Text.Codec.UTF8String — UTF-8-aware codec string
 Data.Text.Codec.Pulse    — C-extractable text-encoding tag codec
 ```
 
@@ -87,8 +89,10 @@ Test modules (all zero-admit) in `test/`:
 | `Data.Text.Codec.Test.UTF8` | RFC 3629 overlong/surrogate/above-max rejections, minimal-form acceptance, roundtrip vectors (1-4 byte) |
 | `Data.Text.Codec.Test.Delims` | CRLF/SP encode length + roundtrip + rejection paths |
 | `Data.Text.Codec.Test.Roundtrip` | text_chars edge cases (empty input, max=0, non-match), byte_matchable/ascii_ok predicates |
+| `Data.Text.Codec.Test.Zero` | text_chars0 empty-string roundtrip |
+| `Data.Text.Codec.Test.UTF8String` | UTF-8 string empty/non-ASCII roundtrip |
 | `Data.Text.Codec.Test.Pulse` | Buffer roundtrips + unknown-tag rejection for the Pulse tag codec |
-| `Data.Text.Codec.Test.Integration` | Coverage anchors for every public symbol (~90 bindings) |
+| `Data.Text.Codec.Test.Integration` | Coverage anchors for every public symbol (122 bindings) |
 
 ## Dependencies
 

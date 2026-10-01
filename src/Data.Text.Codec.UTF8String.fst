@@ -156,14 +156,6 @@ let utf8_string_rest_cond (max: nat) (s: string) (r: byte_seq) : prop =
 
 (* ── Roundtrip lemmas (alphabetical) ───────────────────────────────── *)
 
-(** [lemma_utf8_string_dec_err_bound max input] — error-position bound for
-    [utf8_string_dec] (never errors — always [Inr]). *)
-let lemma_utf8_string_dec_err_bound (max: nat) (input: byte_seq) : Lemma
-  (ensures (match utf8_string_dec max input with
-            | Inl err -> err.err_pos <= Seq.length input
-            | _ -> True))
-  = ()
-
 (** [lemma_utf8_string_dec_consumed_bound max input] — consumed-count bound for
     [utf8_string_dec].
 
@@ -176,6 +168,14 @@ let lemma_utf8_string_dec_consumed_bound (max: nat) (input: byte_seq) : Lemma
             | _ -> True))
   = ()
 #pop-options
+
+(** [lemma_utf8_string_dec_err_bound max input] — error-position bound for
+    [utf8_string_dec] (never errors — always [Inr]). *)
+let lemma_utf8_string_dec_err_bound (max: nat) (input: byte_seq) : Lemma
+  (ensures (match utf8_string_dec max input with
+            | Inl err -> err.err_pos <= Seq.length input
+            | _ -> True))
+  = ()
 
 (** [lemma_utf8_string_roundtrip max s r] — roundtrip proof for [utf8_string]:
     [dec (enc s ++ r) == Inr (s, |enc s|)].
