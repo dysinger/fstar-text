@@ -4,7 +4,7 @@ A formally verified text codec library in F*, built on the record-based
 [Data.Codec] combinator framework.  Provides the bounded-greedy
 [text_chars] combinator (one-or-more ASCII characters), UTF-8 encoding and
 decoding (RFC 3629), ASCII char↔byte bridges, delimiter codecs (CRLF/SP),
-and a Low* text-encoding tag codec for C extraction.
+and a Pulse text-encoding tag codec for C extraction (Custard).
 
 Zero admits.  Zero magic.  All roundtrip proofs are structural.
 
@@ -15,7 +15,7 @@ Data.Text.Codec          — text_chars combinator + scan/roundtrip lemmas
 Data.Text.Codec.Chars    — pure char↔byte maps + ASCII roundtrip induction
 Data.Text.Codec.Delims   — CRLF + SP delimiter codecs
 Data.Text.Codec.UTF8     — RFC 3629 UTF-8 encode/decode + roundtrip proof
-Data.Text.Codec.Low      — C-extractable text-encoding tag codec
+Data.Text.Codec.Pulse    — C-extractable text-encoding tag codec
 ```
 
 The char↔byte roundtrip induction is isolated in [Data.Text.Codec.Chars]
@@ -36,7 +36,8 @@ keep [Data.Text.Codec] a single-combinator module (fstar-proofs §45).
   BOUNDED greedy (consumes at most [max] bytes), mirroring
   [digits_to_int max_len].  An unbounded greedy scan is not a valid
   invertible-syntax codec (fstar-proofs §43).
-- **C extraction.**  [Data.Text.Codec.Low] extracts to C via KaRaMeL.
+- **C extraction.**  [Data.Text.Codec.Pulse] extracts to C11 via Custard
+  (`--custard_backend C`, no KaRaMeL).
 
 ## text_chars API
 
@@ -65,15 +66,16 @@ by [test_reject_d7ff].
 
 ```sh
 nix develop
-make -C text check    # Verify all modules (src + test)
-make -C text krml     # Extract Low* to C
+make check    # Verify all modules (src + test)
 ```
 
 Or via nix:
 
 ```sh
-nix build .#checked
-nix build .#krml
+nix build .#checked  # F* verification gate (0-admit)
+nix build .#native   # C11 shared/static lib (default)
+nix build .#ocaml    # OCaml findlib package
+nix build .#fsharp   # .NET library
 ```
 
 ## Test coverage
@@ -85,6 +87,7 @@ Test modules (all zero-admit) in `test/`:
 | `Data.Text.Codec.Test.UTF8` | RFC 3629 overlong/surrogate/above-max rejections, minimal-form acceptance, roundtrip vectors (1-4 byte) |
 | `Data.Text.Codec.Test.Delims` | CRLF/SP encode length + roundtrip + rejection paths |
 | `Data.Text.Codec.Test.Roundtrip` | text_chars edge cases (empty input, max=0, non-match), byte_matchable/ascii_ok predicates |
+| `Data.Text.Codec.Test.Pulse` | Buffer roundtrips + unknown-tag rejection for the Pulse tag codec |
 | `Data.Text.Codec.Test.Integration` | Coverage anchors for every public symbol (~90 bindings) |
 
 ## Dependencies

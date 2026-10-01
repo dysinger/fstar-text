@@ -19,18 +19,14 @@ open Data.Text.Codec.Delims
 open Data.Text.Codec.Zero
 open Data.Text.Codec.UTF8
 open Data.Text.Codec.UTF8String
-open Data.Text.Codec.Low
+open Data.Text.Codec.Pulse
 
 open FStar.UInt8
 open FStar.UInt32
 open FStar.Seq
-open FStar.HyperStack
-open FStar.HyperStack.ST
-open LowStar.Buffer
 
 module U8 = FStar.UInt8
 module U32 = FStar.UInt32
-module LB = LowStar.Buffer
 
 (* ── Why --admit_smt_queries true ──
    This module is a coverage anchor file.  Each [let _x = f] binding
@@ -168,7 +164,7 @@ let _us10 = lemma_utf8_string_roundtrip
 let _us11 = utf8_string
 let _us12 = lemma_utf8_string_empty_roundtrip
 
-(* ── Low module ── *)
+(* ── Pulse module ── *)
 let _l0 = TE_ASCII
 let _l1 = TE_UTF8
 let _l2 = TE_UTF16
@@ -179,8 +175,8 @@ let _l6 = tag_to_type
 let _l7 = lemma_roundtrip
 let _l8 = encode
 let _l9 = decode
-let _l10 = lemma_encode_match
-let _l11 = lemma_decode_match
+let _l10 = lemma_pulse_roundtrip
+let _l11 = lemma_pulse_encode_decode_match
 let _l12 = tag_ascii
 let _l13 = tag_utf8
 let _l14 = tag_utf16

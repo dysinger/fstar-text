@@ -42,7 +42,7 @@
 | `mk_char` | `int -> option FStar.Char.char` | Code point → char (gated on char_code bound) |
 | `utf8_bytes` | `string -> codec unit` | Fixed UTF-8 string codec via `bytes` |
 
-### Data.Text.Codec.Low — C-extractable tag codec
+### Data.Text.Codec.Pulse — C-extractable tag codec
 
 | Type / Function | Signature | Description |
 |----------|-----------|-------------|
@@ -50,8 +50,8 @@
 | `opt_text_enc` | `OTE_None \| OTE_Some (text_enc & U32.t)` | Decode result (C-friendly) |
 | `tag_of` | `text_enc -> U8.t` | Encoding → tag byte |
 | `tag_to_type` | `U8.t -> option text_enc` | Tag byte → encoding |
-| `encode` | `text_enc -> buffer -> U32.t -> Stack U32.t` | Buffer tag encode |
-| `decode` | `buffer -> U32.t -> Stack opt_text_enc` | Buffer tag decode |
+| `encode` | `fn text_enc -> A.array U8.t -> U32.t -> U32.t` | Buffer tag encode |
+| `decode` | `fn A.array U8.t -> U32.t -> opt_text_enc` | Buffer tag decode |
 
 ## Lemmas
 
@@ -67,5 +67,5 @@
 | `lemma_utf8_roundtrip` | Exhaustive encode→decode roundtrip for every char |
 | `lemma_utf8_encode_valid` | Every char encodes to 1-4 bytes and decodes back |
 | `lemma_char_code_bound_pinned` | Pins F* char_code bound: U+D7FF representable? (build-time guard against stdlib drift) |
-| `lemma_roundtrip` (Low) | tag_of then tag_to_type recovers the original |
-| `lemma_encode_match` / `lemma_decode_match` (Low) | Low* encode/decode agree with the pure spec |
+| `lemma_roundtrip` (Pulse) | tag_of then tag_to_type recovers the original |
+| `lemma_pulse_roundtrip` / `lemma_pulse_encode_decode_match` (Pulse) | Pulse encode/decode agree with the pure spec |

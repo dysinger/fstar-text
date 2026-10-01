@@ -54,13 +54,16 @@ open FStar.List.Tot
 
 module Seq = FStar.Seq
 
-(** The UTF-8 byte encoding of a string: [concatMap char_to_utf8] over its
-    character list. *)
+(* ── Scan + encode/decode (build order: scanner → plumbing → lemmas) ── *)
+
+(** [utf8_string_to_bytes s] — the UTF-8 byte encoding of a string:
+    [concatMap char_to_utf8] over its character list. *)
 unfold
 let utf8_string_to_bytes (s: string) : list byte =
   FStar.List.Tot.concatMap char_to_utf8 (FStar.String.list_of_string s)
 
-(** Variable-width UTF-8 char scan, CHAR-count fuel (fstar-proofs §59 Fact 1).
+(** [utf8_scan_chars max bs] — variable-width UTF-8 char scan, CHAR-count fuel
+    (fstar-proofs §59 Fact 1).
 
     Consumes up to [max] characters from the head of [bs]; stops early when
     the head does not decode as a valid UTF-8 character.  Returns the
@@ -74,15 +77,16 @@ let rec utf8_scan_chars (max: nat) (bs: list byte)
           let (cs, rem) = utf8_scan_chars (max - 1) rest in
           (c :: cs, rem)
 
-(** The scan over [concatMap char_to_utf8 cs @ r'] terminates after consuming
-    exactly [cs] when [max >= length cs] AND either the bound is reached
+(** [lemma_utf8_scan_terminate max cs r'] — the scan over
+    [concatMap char_to_utf8 cs @ r'] terminates after consuming exactly [cs]
+    when [max >= length cs] AND either the bound is reached
     ([length cs = max]) or the suffix [r'] does not begin a valid char
     ([None? (utf8_decode_one r')]).
 
     This single lemma covers BOTH [rest_cond] disjuncts: the bounded case
     ([length cs = max]) uses the fuel bound; the suffix case uses the
     head-char prefix bridge at the boundary.  Proved by induction on [cs]. *)
-#push-options "--z3rlimit 800 --split_queries always"
+#push-options "--z3rlimit 800"
 let rec lemma_utf8_scan_terminate (max: nat) (cs: list FStar.Char.char) (r': list byte)
   : Lemma
     (requires
@@ -101,8 +105,9 @@ let rec lemma_utf8_scan_terminate (max: nat) (cs: list FStar.Char.char) (r': lis
         ()
 #pop-options
 
-(** The UTF-8 string DECODER: [Seq.seq_to_list] at the boundary, list-level
-    char scan (CHAR-count fuel), [string_of_list] reassembly.
+(** [utf8_string_dec max input] — the UTF-8 string DECODER: [Seq.seq_to_list]
+    at the boundary, list-level char scan (CHAR-count fuel), [string_of_list]
+    reassembly.
 
     The consumed count is the NUMBER OF BYTES (the codec contract's [nat] is a
     byte count): [|bs| - |rem|], the bytes dropped off the front of [bs],
@@ -116,13 +121,15 @@ let utf8_string_dec (max: nat) (input: byte_seq) : Tot (decode_result string) =
     else 0 in
   Inr (FStar.String.string_of_list cs, consumed_bytes)
 
-(** The UTF-8 string ENCODER: string → its full UTF-8 byte sequence. *)
+(** [utf8_string_enc s] — the UTF-8 string ENCODER: string → its full UTF-8
+    byte sequence. *)
 unfold
 let utf8_string_enc (s: string) : Tot byte_seq =
   seq_of_list (utf8_string_to_bytes s)
 
-(** Guard: the string has at most [max] characters.  Length-only — every
-    [FStar.Char.char] is a valid Unicode scalar, so encodability is total.
+(** [utf8_string_wfcv max s] — guard: the string has at most [max] characters.
+    Length-only — every [FStar.Char.char] is a valid Unicode scalar, so
+    encodability is total.
 
     Marked [unfold] so [.roundtrip]'s internal [assert (wfcv_custom v)]
     discharges at cross-module call sites (fstar-proofs §54 Trap 1). *)
@@ -130,29 +137,35 @@ unfold
 let utf8_string_wfcv (max: nat) (s: string) : bool =
   List.Tot.length (FStar.String.list_of_string s) <= max
 
-(** Well-formed proposition — [True] (the boolean guard carries the check). *)
+(** [utf8_string_wfcv_prop max s] — well-formed proposition — [True] (the
+    boolean guard carries the check). *)
 unfold
 let utf8_string_wfcv_prop (max: nat) (s: string) : prop =
   True
 
-(** Suffix condition — the bounded-greedy 3-disjunct shape: the run fills the
-    whole char bound, OR the suffix is empty, OR the suffix does not begin a
-    valid UTF-8 char.  The empty-suffix case ([r = Seq.empty]) is subsumed by
-    the third disjunct ([utf8_decode_one [] == None]). *)
+(** [utf8_string_rest_cond max s r] — suffix condition — the bounded-greedy
+    3-disjunct shape: the run fills the whole char bound, OR the suffix is
+    empty, OR the suffix does not begin a valid UTF-8 char.  The empty-suffix
+    case ([r = Seq.empty]) is subsumed by the third disjunct
+    ([utf8_decode_one [] == None]). *)
 unfold
 let utf8_string_rest_cond (max: nat) (s: string) (r: byte_seq) : prop =
   let n = List.Tot.length (FStar.String.list_of_string s) in
   n = max \/ Seq.length r = 0 \/
   (Seq.length r > 0 && None? (utf8_decode_one (Seq.seq_to_list r)))
 
-(** Error-position bound for [utf8_string_dec] (never errors — always [Inr]). *)
+(* ── Roundtrip lemmas (alphabetical) ───────────────────────────────── *)
+
+(** [lemma_utf8_string_dec_err_bound max input] — error-position bound for
+    [utf8_string_dec] (never errors — always [Inr]). *)
 let lemma_utf8_string_dec_err_bound (max: nat) (input: byte_seq) : Lemma
   (ensures (match utf8_string_dec max input with
             | Inl err -> err.err_pos <= Seq.length input
             | _ -> True))
   = ()
 
-(** Consumed-count bound for [utf8_string_dec].
+(** [lemma_utf8_string_dec_consumed_bound max input] — consumed-count bound for
+    [utf8_string_dec].
 
     [consumed_bytes <= |bs|] follows directly from the guarded subtraction:
     when [|rem| <= |bs|] it is [|bs| - |rem| <= |bs|]; otherwise it is [0]. *)
@@ -164,13 +177,14 @@ let lemma_utf8_string_dec_consumed_bound (max: nat) (input: byte_seq) : Lemma
   = ()
 #pop-options
 
-(** Roundtrip proof for [utf8_string]: [dec (enc s ++ r) == Inr (s, |enc s|)].
+(** [lemma_utf8_string_roundtrip max s r] — roundtrip proof for [utf8_string]:
+    [dec (enc s ++ r) == Inr (s, |enc s|)].
 
     Chains (1) [lemma_utf8_scan_terminate max chars r'] (the scan terminates
     after [chars]), (2) [lemma_seq_to_list_of_list_append bytes r] (the
     boundary bridge), (3) [FStar.String.string_of_list_of_string s] (the
     string reassembly). *)
-#push-options "--z3rlimit 4000 --split_queries always"
+#push-options "--z3rlimit 4000"
 let lemma_utf8_string_roundtrip (max: nat) (s: string) (r: byte_seq)
   : Lemma
     (requires
@@ -204,7 +218,19 @@ let lemma_utf8_string_roundtrip (max: nat) (s: string) (r: byte_seq)
     ()
 #pop-options
 
-(** The UTF-8-aware [codec string].
+(** [lemma_utf8_string_empty_roundtrip max] — concrete empty-string roundtrip
+    vector: the empty string roundtrips against an empty suffix (CHAR-count 0,
+    byte-count 0). *)
+#push-options "--z3rlimit 400"
+let lemma_utf8_string_empty_roundtrip (max: nat) : Lemma
+  (requires utf8_string_wfcv max "" /\ utf8_string_rest_cond max "" Seq.empty)
+  (ensures utf8_string_dec max (utf8_string_enc "" `Seq.append` Seq.empty) == Inr ("", 0))
+  = lemma_utf8_string_roundtrip max "" Seq.empty
+#pop-options
+
+(* ── Combinator ─────────────────────────────────────────────────────── *)
+
+(** [utf8_string max] — the UTF-8-aware [codec string].
 
     Encodes each char as 1-4 UTF-8 bytes; decodes a run of UTF-8 chars into
     a [string] (CHAR-count fuel, fstar-proofs §59).  Composability (the
@@ -222,13 +248,4 @@ let utf8_string (max: nat) : codec string =
     (lemma_utf8_string_roundtrip max)
     (lemma_utf8_string_dec_err_bound max)
     (lemma_utf8_string_dec_consumed_bound max)
-#pop-options
-
-(** Concrete empty-string roundtrip vector: the empty string roundtrips
-    against an empty suffix (CHAR-count 0, byte-count 0). *)
-#push-options "--z3rlimit 400"
-let lemma_utf8_string_empty_roundtrip (max: nat) : Lemma
-  (requires utf8_string_wfcv max "" /\ utf8_string_rest_cond max "" Seq.empty)
-  (ensures utf8_string_dec max (utf8_string_enc "" `Seq.append` Seq.empty) == Inr ("", 0))
-  = lemma_utf8_string_roundtrip max "" Seq.empty
 #pop-options

@@ -14,10 +14,12 @@ module Data.Text.Codec.Delims
 
 open Data.Codec
 
-(** CRLF: carriage return (0x0D) followed by line feed (0x0A). *)
+(* ── Delimiter codecs (alphabetical) ────────────────────────────────── *)
+
+(** [crlf] — CRLF: carriage return (0x0D) followed by line feed (0x0A). *)
 let crlf : codec unit =
   map_ (fun (_, _) -> Some ()) (fun _ -> Some ((), ()))
     (product (byte_val 0x0Duy) (byte_val 0x0Auy))
 
-(** SP: single space (0x20). *)
+(** [sp] — SP: single space (0x20). *)
 let sp : codec unit = byte_val 0x20uy

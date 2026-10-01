@@ -2,24 +2,27 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 {
-  description = "fstar-text — verified text codecs (KaRaMeL era)";
+  description = "fstar-text — verified text codec library";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/c31cf09";
     flake-utils.url = "github:numtide/flake-utils";
-    # KaRaMeL-era F* (pre-Custard): Low*/KaRaMeL stdlib still present.
+    treefmt-nix.url = "github:numtide/treefmt-nix";
     fstar = {
-      url = "github:dysinger/fstar/v2025.10.06+lsp";
+      # Fork of F* with the LSP server ported onto the v2026.09.20 base
+      # (first stable tag shipping the Custard extractor).
+      url = "github:dysinger/fstar/v2026.09.20+lsp";
       flake = false;
     };
-    karamel = {
-      url = "github:dysinger/karamel/coextract";
-      flake = false;
-    };
-    # No codec flake input: the codec dependency (Data.Codec.Types/Data.Codec,
-    # KaRaMeL era) is vendored in-repo under ./codec, mirroring the basen
-    # KaRaMeL-era port.  Switch to `github:dysinger/fstar-codec` when the
-    # repo is published and re-pointed at the Custard era.
+    # The codec dependency (Data.Codec.Types).  Consumed from the published
+    # `dysinger/fstar-codec` GitHub repo (pinned to its HEAD commit in
+    # flake.lock).
+    fstar-codec.url = "github:dysinger/fstar-codec";
+    # No karamel input.  karamel is an in-tree SUBMODULE of F* that upstream's
+    # .nix/fstar.nix synthesizes (cp -r karamel-src) only to run `make -C
+    # karamel install`, which installs the `krml` binary + headers.  We do not
+    # use krml (fstar.exe + fstar.lib are all our targets consume), so karamel
+    # is dropped entirely and the karamel install step is neutralized.
   };
 
   outputs =
@@ -27,6 +30,8 @@
       self,
       nixpkgs,
       flake-utils,
+      treefmt-nix,
+      fstar-codec,
       ...
     }:
     flake-utils.lib.eachDefaultSystem (
@@ -35,97 +40,172 @@
         pkgs = import nixpkgs {
           inherit system;
           overlays = [
-            (_final: prev:
-              if prev.stdenv.isDarwin && prev.stdenv.isAarch64 then {
-                # Skip OCaml's own testsuite on aarch64-darwin.
-                ocaml-ng = prev.ocaml-ng // {
-                  ocamlPackages_5_3 = prev.ocaml-ng.ocamlPackages_5_3.overrideScope (_: _: {
-                    ocaml = prev.ocaml-ng.ocamlPackages_5_3.ocaml.overrideAttrs (_: {
-                      checkPhase = "true";
-                    });
-                  });
-                };
-              } else { })
-            (_final: prev:
+            (
+              _final: prev:
+              if prev.stdenv.isDarwin && prev.stdenv.isAarch64 then
+                {
+                  # Skip OCaml's own testsuite on aarch64-darwin.
+                  ocaml-ng = prev.ocaml-ng // {
+                    ocamlPackages_5_3 = prev.ocaml-ng.ocamlPackages_5_3.overrideScope (
+                      _: _: {
+                        ocaml = prev.ocaml-ng.ocamlPackages_5_3.ocaml.overrideAttrs (_: {
+                          checkPhase = "true";
+                        });
+                      }
+                    );
+                  };
+                }
+              else
+                { }
+            )
+            (
+              _final: prev:
               let
-                z3 = prev.callPackage (inputs.fstar + "/.nix/z3.nix") { };
                 ocamlPackages = prev.ocaml-ng.ocamlPackages_5_3;
-                fstar = (ocamlPackages.callPackage (inputs.fstar + "/.nix/fstar.nix") {
-                  version = "unknown";
-                  inherit z3;
-                }).overrideAttrs (old: {
-                  nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ prev.git ];
-                });
-                gtime = prev.runCommand "gtime" { } ''
-                  mkdir -p $out/bin
-                  ln -s ${prev.time}/bin/time $out/bin/gtime
+                z3 = prev.callPackage (inputs.fstar + "/.nix/z3.nix") { };
+                version = "2026.09.20+lsp";
+
+                # No karamel.  fstar.nix takes `karamel-src` and
+                # `karamelOcamlDeps` only to build/install the in-tree karamel
+                # submodule (→ the `krml` binary we don't use).  Pass a no-op
+                # empty dir + empty deps, and neutralize the karamel install
+                # step below.
+                fstar =
+                  (ocamlPackages.callPackage (inputs.fstar + "/.nix/fstar.nix") {
+                    inherit version z3;
+                    karamel-src = prev.emptyDirectory;
+                    karamelOcamlDeps = [ ];
+                    ocamlLibraryPath = "";
+                  }).overrideAttrs
+                    (old: {
+                      nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ prev.git ];
+                      # The 4-stage bootstrap verifies ulib with the default z3
+                      # rlimit (5).  `FStar.Math.Fermat.binomial_theorem` has always
+                      # been flaky (see its git history of "tweak rlimit"/"stabilize
+                      # proofs") and deterministically times out under z3 4.13.3,
+                      # failing the stage2 `.checked` verification.  Raise the global
+                      # rlimit so the bootstrap is deterministic.  OTHERFLAGS is
+                      # appended to FSTAR_OPTIONS by mk/generic-1.mk and flows to the
+                      # nested `make -f mk/lib.mk` (the .alib2.src.touch recipe does
+                      # not re-specify it, unlike fsharp-lib.src).
+                      buildPhase = ''
+                        export PATH="${z3}/bin:$PATH"
+                        # Neutralize the in-tree karamel submodule: set
+                        # FSTAR_USE_KRML_EXE=1 so the `karamel` phony target is a
+                        # no-op (it otherwise errors: "Run git submodule init"), and
+                        # stub karamel/Makefile so the unconditional `make -C karamel
+                        # install` in install-stage / install is a NOP.  We don't use
+                        # the krml binary / headers.
+                        export FSTAR_USE_KRML_EXE=1 KRML_EXE=/bin/true
+                        mkdir -p karamel
+                        printf 'all:\n\t@true\ninstall:\n\t@true\n' > karamel/Makefile
+                        make OTHERFLAGS='--z3rlimit 20 --retry 3'
+                      '';
+                      # fstar.nix's installPhase runs `make install`, whose top-level
+                      # `install:` target unconditionally does `$(MAKE) -C karamel
+                      # install LOWSTAR=false`.  We dropped karamel, so stub a no-op
+                      # karamel/Makefile first so that step is a NOP.  Everything else
+                      # (fstar.exe, fstar.lib, ulib, ulib.checked) installs normally.
+                      installPhase = ''
+                        export FSTAR_USE_KRML_EXE=1 KRML_EXE=/bin/true
+                        mkdir -p karamel
+                        printf 'all:\n\t@true\ninstall:\n\t@true\n' > karamel/Makefile
+                        PREFIX=$out make install
+
+                        for binary in $out/bin/*
+                        do
+                          wrapProgram $binary --prefix PATH ":" ${z3}/bin
+                        done
+
+                        cd $out
+                        installShellCompletion --bash ${inputs.fstar + "/.completion/bash/fstar.exe.bash"}
+                        installShellCompletion --fish ${inputs.fstar + "/.completion/fish/fstar.exe.fish"}
+                        installShellCompletion --zsh --name _fstar.exe ${inputs.fstar + "/.completion/zsh/__fstar.exe"}
+                      '';
+                    });
+
+                # fstar-checked: ulib .checked files (pre-verified by the fstar
+                # compiler), seeded into the cache so `make check` can write our
+                # own modules' .checked stamps.
+                fstar-checked = prev.runCommand "fstar-checked" { nativeBuildInputs = [ fstar ]; } ''
+                  mkdir -p $out
+                  cp ${fstar}/lib/fstar/ulib.checked/*.checked $out/ 2>/dev/null || true
+                  echo "checked: $(ls $out/*.checked 2>/dev/null | wc -l) files"
                 '';
-                # fstar-checked: ulib .checked files (pre-verified by fstar compiler).
-                fstar-checked = prev.runCommand "fstar-checked"
-                  { nativeBuildInputs = [ fstar ]; }
-                  ''
-                    mkdir -p $out
-                    cp ${fstar}/lib/fstar/ulib.checked/*.checked $out/ 2>/dev/null || true
-                    echo "checked: $(ls $out/*.checked 2>/dev/null | wc -l) files"
-                  '';
-                karamel = (prev.callPackage (inputs.karamel + "/.nix/karamel.nix") {
-                  inherit fstar ocamlPackages z3;
-                  version = "unknown";
-                }).overrideAttrs (old: {
-                  nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ gtime ];
-                });
-                fstar-krml = prev.runCommand "fstar-krml"
-                  { nativeBuildInputs = [ fstar karamel ]; }
-                  ''
-                    mkdir -p $out/krml $out/extract
-                    cp ${karamel.home}/krmllib/.extract/*.krml $out/krml/ 2>/dev/null || true
-                    ULIB_DIR=${fstar}/lib/fstar/ulib
-                    find $ULIB_DIR -name '*.fsti' -exec cp {} $out/extract/ \; 2>/dev/null || true
-                    find $ULIB_DIR -name '*.fst' -exec cp {} $out/extract/ \; 2>/dev/null || true
-                    echo "krml: $(ls $out/krml/*.krml 2>/dev/null | wc -l) files"
-                    echo "extract: $(ls $out/extract/ 2>/dev/null | wc -l) files"
-                  '';
               in
               {
-                inherit fstar karamel fstar-checked fstar-krml;
-                ocamlPackages = prev.ocaml-ng.ocamlPackages_5_3;
-              })
+                inherit fstar fstar-checked;
+                inherit ocamlPackages;
+              }
+            )
           ];
         };
 
-        inherit (pkgs) fstar karamel fstar-checked fstar-krml lib stdenv;
+        inherit (pkgs)
+          stdenv
+          fstar
+          fstar-checked
+          lib
+          dotnet-sdk_10
+          ;
         inherit (pkgs) ocamlPackages;
 
-        # The codec dependency (vendored at ./codec, KaRaMeL era).
-        _codec = import ./codec/default.nix { inherit pkgs; };
+        # The codec dependency's source + checked artifacts come from the
+        # fstar-codec flake input (its `checked` package is the pre-verified
+        # `.checked` set; its source is the flake's own tree).
+        codec-src = fstar-codec;
+        codec-checked = fstar-codec.packages.${system}.checked;
 
         _pkg = import ./default.nix {
-          inherit pkgs;
-          inherit (_codec) codec-checked;
-          codec-src = ./codec;
+          inherit
+            fstar
+            fstar-checked
+            lib
+            ocamlPackages
+            stdenv
+            codec-src
+            codec-checked
+            ;
+          dotnet = dotnet-sdk_10;
         };
+
+        treefmtModule = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
 
       in
       {
-        packages.default = _pkg.krml;
+        formatter = treefmtModule.config.build.wrapper;
+
+        checks.formatting = treefmtModule.config.build.check self;
+
+        # The build targets are named by deliverable (no `fstar-text-`
+        # prefix); `default` aliases `native` (the C11 shared/static lib).
+        packages.default = _pkg.native;
         packages.checked = _pkg.checked;
-        packages.krml = _pkg.krml;
+        packages.ocaml = _pkg.ocaml;
+        packages.native = _pkg.native;
+        packages.fsharp = _pkg.fsharp;
 
         devShells.default = pkgs.mkShell {
           dontDetectOcamlConflicts = true;
           shellHook = ''
-            export FSTAR_KRML="${fstar-krml}"
             export FSTAR_CHECKED="${fstar-checked}"
-            export KRML_HOME="${karamel.home}"
-            export KRM_LIB="${karamel.home}/krmllib"
-            export KRM_INC="-I${karamel.home}/include -I${karamel.home}/krmllib/c -I${karamel.home}/krmllib/dist/minimal"
+            export CODEC_SRC="${codec-src}"
+            export CODEC_CHECKED="${codec-checked}"
           '';
+          # Note: z3 is not listed here on purpose.  The `fstar.exe` wrapper
+          # already prepends the correct z3 (4.13.3, from the fstar fork's
+          # .nix/z3.nix) onto its own PATH, so `fstar.exe`/`make check` find
+          # it.  Exposing that z3 as a separate top-level attr triggers a nix
+          # fixpoint stack-overflow (the overlay's `z3 = prev.callPackage
+          # (inputs.fstar + "/.nix/z3.nix")` self-references when inherited
+          # back out).  `git` + `dotnet-sdk_10` are present for the fsharp
+          # target and the fstar bootstrap.
           buildInputs = with pkgs; [
             fstar
-            karamel
+            dotnet-sdk_10
+            git
             ocaml
             ocamlPackages.ocaml-lsp
-            python3
           ];
         };
       }

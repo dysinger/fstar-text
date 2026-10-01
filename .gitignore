@@ -15,9 +15,6 @@ cache/
 # Throwaway Pulse-port spike scratch dir (see AGENTS.md § Pulse-port spike)
 spike/
 
-# KaRaMeL wasm output dir (flake.nix `hello-wasm` uses `-tmpdir wasm-out`)
-wasm-out/
-
 # F* `.checked` cache, in case `fstar.exe` is run by hand without `--odir`.
 # (The Makefile and default.nix both pass `--odir`, which routes these into
 # out/ or the nix store — but a bare `fstar.exe` run drops them in cwd.)
@@ -26,18 +23,6 @@ wasm-out/
 
 # C compiler artifacts, in case `make` or a hand-run compile drops them in cwd.
 *.o
-
-# KaRaMeL wasm/web loader bundle, in case `krml -backend wasm` is run by hand
-# without `-tmpdir` (the flake hello-wasm derivation routes these into wasm-out/).
-README
-loader.js
-main.js
-shell.js
-browser.js
-main.html
-layouts.json
-*.wasm
-*.wast
 
 # SMT query dumps from `fstar.exe --log_queries` (hang diagnosis)
 queries-*.smt2

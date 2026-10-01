@@ -28,11 +28,25 @@ open FStar.Char
 open FStar.String
 open FStar.List.Tot
 open FStar.Math.Lemmas
-open FStar.Mul
 
 module U8 = FStar.UInt8
 
-(** Convert a char to its low byte, unconditionally.
+(* ── Char↔byte maps (dependency order: leaves before dependents) ─────── *)
+
+(** [ascii_ok pred c] — a character is ASCII (< 128) and satisfies [pred]. *)
+let ascii_ok (pred: FStar.Char.char -> bool) (c: FStar.Char.char) : bool =
+  FStar.Char.int_of_char c < 128 && pred c
+
+(** [byte_to_char b] — convert an ASCII byte (< 128) to its character. *)
+let byte_to_char (b: byte{FStar.UInt8.v b < 128}) : Tot FStar.Char.char =
+  FStar.Char.char_of_int (FStar.UInt8.v b)
+
+(** [byte_matchable pred b] — a byte is matchable: < 128 and its character
+    satisfies [pred]. *)
+let byte_matchable (pred: FStar.Char.char -> bool) (b: byte) : bool =
+  U8.v b < 128 && pred (byte_to_char b)
+
+(** [char_to_byte_trunc c] — convert a char to its low byte, unconditionally.
 
     The [% 256] truncation is a totality safety net.  Well-formed
     [text_chars] strings are all-ASCII ([int_of_char c < 128]), so for
@@ -42,31 +56,22 @@ unfold
 let char_to_byte_trunc (c: FStar.Char.char) : byte =
   FStar.UInt8.uint_to_t (FStar.Char.int_of_char c % 256)
 
-(** Convert an ASCII byte (< 128) to its character. *)
-let byte_to_char (b: byte{FStar.UInt8.v b < 128}) : Tot FStar.Char.char =
-  FStar.Char.char_of_int (FStar.UInt8.v b)
-
-(** Convert a string to its low-byte list. *)
-unfold
-let text_string_to_bytes (s: string) : list byte =
-  FStar.List.Tot.map char_to_byte_trunc (FStar.String.list_of_string s)
-
-(** Convert a byte list to a string (each byte becomes its codepoint). *)
+(** [text_bytes_to_string bs] — convert a byte list to a string (each byte
+    becomes its codepoint). *)
 unfold
 let text_bytes_to_string (bs: list byte) : string =
   FStar.String.string_of_list
     (FStar.List.Tot.map (fun b -> FStar.Char.char_of_int (FStar.UInt8.v b)) bs)
 
-(** A character is ASCII and satisfies [pred]. *)
-let ascii_ok (pred: FStar.Char.char -> bool) (c: FStar.Char.char) : bool =
-  FStar.Char.int_of_char c < 128 && pred c
+(** [text_string_to_bytes s] — convert a string to its low-byte list. *)
+unfold
+let text_string_to_bytes (s: string) : list byte =
+  FStar.List.Tot.map char_to_byte_trunc (FStar.String.list_of_string s)
 
-(** A byte is matchable: < 128 and its character satisfies [pred]. *)
-let byte_matchable (pred: FStar.Char.char -> bool) (b: byte) : bool =
-  U8.v b < 128 && pred (byte_to_char b)
+(* ── Roundtrip lemmas (alphabetical) ────────────────────────────────── *)
 
-(** Per-character ASCII fact: matchability + roundtrip, without any
-    recursive predicate in the requires. *)
+(** [lemma_char_ascii pred c] — per-character ASCII fact: matchability +
+    roundtrip, without any recursive predicate in the [requires]. *)
 let lemma_char_ascii (pred: FStar.Char.char -> bool) (c: FStar.Char.char)
   : Lemma
     (requires ascii_ok pred c)
@@ -77,7 +82,8 @@ let lemma_char_ascii (pred: FStar.Char.char -> bool) (c: FStar.Char.char)
     FStar.Char.char_of_u32_of_char c;
     ()
 
-(** List-level induction: matchability + string roundtrip for ASCII lists. *)
+(** [lemma_chars_roundtrip_all pred chars] — list-level induction:
+    matchability + string roundtrip for ASCII lists. *)
 let rec lemma_chars_roundtrip_all (pred: FStar.Char.char -> bool) (chars: list FStar.Char.char)
   : Lemma
     (requires List.Tot.for_all (ascii_ok pred) chars)
@@ -93,7 +99,8 @@ let rec lemma_chars_roundtrip_all (pred: FStar.Char.char -> bool) (chars: list F
         lemma_chars_roundtrip_all pred tl;
         ()
 
-(** Top-level string roundtrip: bytes→string for an ASCII string. *)
+(** [lemma_text_string_to_bytes_roundtrip pred s] — top-level string
+    roundtrip: bytes→string for an ASCII string. *)
 let lemma_text_string_to_bytes_roundtrip (pred: FStar.Char.char -> bool) (s: string)
   : Lemma
     (requires List.Tot.for_all (ascii_ok pred) (FStar.String.list_of_string s))

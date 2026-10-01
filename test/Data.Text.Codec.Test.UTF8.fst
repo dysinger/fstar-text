@@ -172,4 +172,9 @@ let test_roundtrip_all () : Lemma
 let test_decode_prefix_all () : Lemma
   (ensures (forall (c: FStar.Char.char) (rest: list byte).
              utf8_decode_one (char_to_utf8 c @ rest) == Some (c, rest)))
-  = FStar.Classical.forall_intro_2 (fun c rest -> lemma_utf8_decode_prefix c rest)
+  = FStar.Classical.forall_intro_2
+      #FStar.Char.char
+      #(fun (_: FStar.Char.char) -> list byte)
+      #(fun (c: FStar.Char.char) (rest: list byte) ->
+           utf8_decode_one (char_to_utf8 c @ rest) == Some (c, rest))
+      (fun c rest -> lemma_utf8_decode_prefix c rest)

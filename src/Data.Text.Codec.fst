@@ -42,17 +42,11 @@ open FStar.List.Tot
 
 module Seq = FStar.Seq
 
-(** String ↔ bytes conversion — total, no admits. *)
+(* ── Bounded greedy scan (build order: scanner → its lemmas) ──────── *)
 
-(** NOTE: [char_to_utf8] lives in [Data.Text.Codec.UTF8], the RFC 3629
-    module, not here — keeping the UTF-8 encoder in one place avoids the
-    name collision noted in fstar-proofs §43. *)
-
-(** text_chars — one-or-more ASCII chars satisfying a predicate,
-    consumed with a BOUNDED greedy scan. *)
-
-(** BOUNDED greedy scan of a [byte_seq], returning the longest matchable
-    prefix (in order) up to [max] bytes.  Recurse on the sliced suffix.
+(** [scan_text_chars max pred input] — bounded greedy scan of a [byte_seq],
+    returning the longest matchable prefix (in order) up to [max] bytes.
+    Recurse on the sliced suffix.
 
     Stops at (a) [max] bytes consumed, (b) end of input, or (c) the first
     non-matching byte — whichever comes first.  This bounded form is what
@@ -68,7 +62,8 @@ let rec scan_text_chars (max: nat) (pred: FStar.Char.char -> bool) (input: byte_
       else []
     end
 
-(** Lemma: the bounded greedy scan consumes at most [|input|] bytes.
+(** [lemma_scan_consumed_le_len max pred input] — the bounded greedy scan
+    consumes at most [|input|] bytes.
 
     Induct on the input length + bound.  When the head byte is matchable,
     the scan consumes one byte plus the recursive scan of the tail, and
@@ -91,14 +86,15 @@ let rec lemma_scan_consumed_le_len (max: nat) (pred: FStar.Char.char -> bool) (i
     end
 #pop-options
 
-(** Lemma: a well-formed matchable prefix scans to its own length.
+(** [lemma_scan_prefix max pred bs r] — a well-formed matchable prefix scans
+    to its own length.
 
     When [bs] is entirely matchable, [|bs| <= max], and the suffix [r]
     begins with a non-matchable byte (or is empty, or [bs] fills the
     whole bound), scanning [seq_of_list bs ++ r] from 0 consumes
     exactly [bs].  The 3-disjunct precondition mirrors the [rest_cond]
     of the codec. *)
-#push-options "--z3rlimit 400 --split_queries always"
+#push-options "--z3rlimit 400"
 #restart-solver
 let rec lemma_scan_prefix (max: nat) (pred: FStar.Char.char -> bool) (bs: list byte) (r: byte_seq)
   : Lemma
@@ -121,7 +117,10 @@ let rec lemma_scan_prefix (max: nat) (pred: FStar.Char.char -> bool) (bs: list b
         ()
 #pop-options
 
-(** The [text_chars] decoder: bounded greedy scan, then string conversion.
+(* ── text_chars codec plumbing (decoder/encoder/guards) ─────────────── *)
+
+(** [text_chars_dec max pred input] — the [text_chars] decoder: bounded greedy
+    scan, then string conversion.
 
     Requires the scan to consume at least one byte (a non-empty match),
     so [text_chars] matches one-or-more characters. *)
@@ -130,7 +129,8 @@ let text_chars_dec (max: nat) (pred: FStar.Char.char -> bool) (input: byte_seq) 
   if Cons? consumed then Inr (text_bytes_to_string consumed, List.Tot.length consumed)
   else Inl (mk_decode_error ExpectedPredicate 0)
 
-(** The [text_chars] encoder: string to its byte sequence.
+(** [text_chars_enc pred s] — the [text_chars] encoder: string to its byte
+    sequence.
 
     NOTE: [pred] is bound but NOT consulted in the body — the encoder emits
     every character's low byte unconditionally.  This is by design: the
@@ -143,10 +143,10 @@ unfold
 let text_chars_enc (pred: FStar.Char.char -> bool) (s: string) : Tot byte_seq =
   seq_of_list (text_string_to_bytes s)
 
-(** Guard: the string is non-empty, at most [max] chars, all-ASCII, and
-    every character satisfies [pred].  Marked [unfold] so SMT can reduce it
-    across module boundaries when a composed codec's [.roundtrip] field
-    re-asserts it (fstar-proofs §54 Trap 1). *)
+(** [text_chars_wfcv max pred s] — guard: the string is non-empty, at most
+    [max] chars, all-ASCII, and every character satisfies [pred].  Marked
+    [unfold] so SMT can reduce it across module boundaries when a composed
+    codec's [.roundtrip] field re-asserts it (fstar-proofs §54 Trap 1). *)
 unfold
 let text_chars_wfcv (max: nat) (pred: FStar.Char.char -> bool) (s: string) : bool =
   let chars = FStar.String.list_of_string s in
@@ -154,7 +154,7 @@ let text_chars_wfcv (max: nat) (pred: FStar.Char.char -> bool) (s: string) : boo
   List.Tot.length chars <= max &&
   List.Tot.for_all (ascii_ok pred) chars
 
-(** Well-formed proposition — [True].
+(** [text_chars_wfcv_prop max pred s] — well-formed proposition — [True].
 
     SOUND because the boolean [text_chars_wfcv] fully characterizes
     well-formedness (non-empty + length bound + all-ASCII-matchable), and
@@ -166,29 +166,29 @@ unfold
 let text_chars_wfcv_prop (max: nat) (pred: FStar.Char.char -> bool) (s: string) : prop =
   True
 
-(** Suffix condition — the 3-disjunct bounded-greedy shape:
-    either the encoded run fills the whole bound, or the suffix is empty,
-    or the byte after the run is not matchable.  Marked [unfold] (§54
-    Trap 1). *)
+(** [text_chars_rest_cond max pred s r] — suffix condition — the 3-disjunct
+    bounded-greedy shape: either the encoded run fills the whole bound, or
+    the suffix is empty, or the byte after the run is not matchable.  Marked
+    [unfold] (§54 Trap 1). *)
 unfold
 let text_chars_rest_cond (max: nat) (pred: FStar.Char.char -> bool) (s: string) (r: byte_seq) : prop =
   let n = List.Tot.length (text_string_to_bytes s) in
   n = max \/ Seq.length r = 0 \/ (Seq.length r > 0 && not (byte_matchable pred (Seq.index r 0)))
 
-(** Error-position bound for [text_chars_dec].
+(* ── Roundtrip lemmas (alphabetical) ───────────────────────────────── *)
 
-    The only error is the empty-match case, at position 0, so the bound
-    holds trivially. *)
+(** [lemma_text_chars_dec_err_bound max pred input] — error-position bound for
+    [text_chars_dec].  The only error is the empty-match case, at position 0,
+    so the bound holds trivially. *)
 let lemma_text_chars_dec_err_bound (max: nat) (pred: FStar.Char.char -> bool) (input: byte_seq) : Lemma
   (ensures (match text_chars_dec max pred input with
             | Inl err -> err.err_pos <= Seq.length input
             | _ -> True))
   = ()
 
-(** Consumed-count bound for [text_chars_dec].
-
-    The consumed count is exactly [|scan|], which [lemma_scan_consumed_le_len]
-    bounds by the input length. *)
+(** [lemma_text_chars_dec_consumed_bound max pred input] — consumed-count bound
+    for [text_chars_dec].  The consumed count is exactly [|scan|], which
+    [lemma_scan_consumed_le_len] bounds by the input length. *)
 #push-options "--z3rlimit 400"
 let lemma_text_chars_dec_consumed_bound (max: nat) (pred: FStar.Char.char -> bool) (input: byte_seq) : Lemma
   (ensures (match text_chars_dec max pred input with
@@ -200,7 +200,7 @@ let lemma_text_chars_dec_consumed_bound (max: nat) (pred: FStar.Char.char -> boo
     end else ()
 #pop-options
 
-(** Roundtrip proof for [text_chars].
+(** [lemma_text_chars_roundtrip max pred s r] — roundtrip proof for [text_chars].
 
     The bounded greedy scan ([lemma_scan_prefix]), the char↔byte map
     roundtrip ([lemma_chars_roundtrip_all]), and the string roundtrip
@@ -241,7 +241,10 @@ let lemma_text_chars_roundtrip (max: nat) (pred: FStar.Char.char -> bool) (s: st
     ()
 #pop-options
 
-(** [text_chars]: match one or more ASCII chars satisfying [pred], as a [string].
+(* ── Combinator ─────────────────────────────────────────────────────── *)
+
+(** [text_chars max pred] — match one or more ASCII chars satisfying [pred],
+    as a [string].
 
     The decoder is BOUNDED greedy — it consumes at most [max] matchable
     bytes (fstar-proofs §43).  This keeps the codec invertible and
