@@ -164,7 +164,9 @@ let _us10 = lemma_utf8_string_roundtrip
 let _us11 = utf8_string
 let _us12 = lemma_utf8_string_empty_roundtrip
 
-(* ── Pulse module ── *)
+(* ── Pulse module (pure symbols only; the `fn`s are covered by real calls
+   in Data.Text.Codec.Test.Pulse — anchoring an effectful `fn` from this
+   non-#lang-pulse module would lose its stt spec, i.e. Warning 249). ── *)
 let _l0 = TE_ASCII
 let _l1 = TE_UTF8
 let _l2 = TE_UTF16
@@ -173,12 +175,8 @@ let _l4 = OTE_Some
 let _l5 = tag_of
 let _l6 = tag_to_type
 let _l7 = lemma_roundtrip
-let _l8 = encode
-let _l9 = decode
-let _l10 = lemma_pulse_roundtrip
-let _l11 = lemma_pulse_encode_decode_match
-let _l12 = tag_ascii
-let _l13 = tag_utf8
-let _l14 = tag_utf16
+let _l8 = tag_ascii
+let _l9 = tag_utf8
+let _l10 = tag_utf16
 
 #pop-options

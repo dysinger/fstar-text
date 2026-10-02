@@ -35,14 +35,7 @@ PULSE_DIRS := $(FLIB)/pulse/common\
   $(FLIB)/pulse/pulse/lib\
   $(FLIB)/pulse/pulse.checked
 
-# Three benign CWarnings are silenced (they are structural, not defects):
-#   274 -- `X.Pulse` namespace shadows upstream `Pulse` (case-insensitive).
-#   288 -- deprecated A.alloc/A.free (the F* upstream test idiom; "model
-#          implementations only", which our test modules are).
-#   249 -- precision loss when the coverage-anchor module references a Pulse
-#          `fn` from a non-#lang-pulse context (inherent to the anchor pattern).
-
-FSTAR_FLAGS = --no_default_includes --warn_error -274 --warn_error -288 --warn_error -249 \
+FSTAR_FLAGS = --no_default_includes \
   --include $(ULIB) \
   $(foreach d,$(PULSE_DIRS),--include $(d)) \
   --include $(CODEC_SRC)/src \
