@@ -35,7 +35,10 @@ PULSE_DIRS := $(FLIB)/pulse/common\
   $(FLIB)/pulse/pulse/lib\
   $(FLIB)/pulse/pulse.checked
 
-FSTAR_FLAGS = --no_default_includes \
+# Warning 274 (namespace "X.Pulse" shadows upstream "Pulse") is benign noise;
+# silence it.  See the --warn_error -274 flag below.
+
+FSTAR_FLAGS = --no_default_includes --warn_error -274 \
   --include $(ULIB) \
   $(foreach d,$(PULSE_DIRS),--include $(d)) \
   --include $(CODEC_SRC)/src \
