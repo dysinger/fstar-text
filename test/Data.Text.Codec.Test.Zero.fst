@@ -1,6 +1,7 @@
 (* Copyright 2026 Department of Code LLC.
    SPDX-License-Identifier: AGPL-3.0-or-later *)
 
+
 (**
 Data.Text.Codec.Test.Zero — compliance tests for the [text_chars0] combinator.
 
@@ -21,14 +22,17 @@ Zero admits.
 *)
 module Data.Text.Codec.Test.Zero
 
+
 open Data.Text.Codec.Zero
 open FStar.Seq
 open FStar.Char
+
 
 (** Test predicate: any ASCII letter. *)
 let is_letter (c: FStar.Char.char) : bool =
   let v = FStar.Char.int_of_char c in
   (0x41 <= v && v <= 0x5A) || (0x61 <= v && v <= 0x7A)
+
 
 (** The empty string is well-formed for [text_chars0] (the [wfcv] guard does
     not require non-emptiness).  Stated against the concrete empty vector's

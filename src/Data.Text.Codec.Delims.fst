@@ -1,6 +1,7 @@
 (* Copyright 2026 Department of Code LLC.
    SPDX-License-Identifier: AGPL-3.0-or-later *)
 
+
 (**
 Data.Text.Codec.Delims — Text delimiter codecs.
 
@@ -15,14 +16,18 @@ the same module pollutes the SMT context and breaks the [text_chars]
 *)
 module Data.Text.Codec.Delims
 
+
 open Data.Codec
 
+
 (* ── Delimiter codecs (alphabetical) ────────────────────────────────── *)
+
 
 (** [crlf] — CRLF: carriage return (0x0D) followed by line feed (0x0A). *)
 let crlf : codec unit =
   map_ (fun (_, _) -> Some ()) (fun _ -> Some ((), ()))
     (product (byte_val 0x0Duy) (byte_val 0x0Auy))
+
 
 (** [sp] — SP: single space (0x20). *)
 let sp : codec unit = byte_val 0x20uy

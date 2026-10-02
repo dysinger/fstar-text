@@ -1,6 +1,7 @@
 (* Copyright 2026 Department of Code LLC.
    SPDX-License-Identifier: AGPL-3.0-or-later *)
 
+
 (**
 Data.Text.Codec.UTF8String — a UTF-8-aware [codec string].
 
@@ -47,6 +48,7 @@ this codec with a char->bool guard).
 *)
 module Data.Text.Codec.UTF8String
 
+
 open Data.Codec
 open Data.Text.Codec.UTF8
 open FStar.Seq
@@ -55,15 +57,19 @@ open FStar.String
 open FStar.UInt8
 open FStar.List.Tot
 
+
 module Seq = FStar.Seq
 
+
 (* ── Scan + encode/decode (build order: scanner → plumbing → lemmas) ── *)
+
 
 (** [utf8_string_to_bytes s] — the UTF-8 byte encoding of a string:
     [concatMap char_to_utf8] over its character list. *)
 unfold
 let utf8_string_to_bytes (s: string) : list byte =
   FStar.List.Tot.concatMap char_to_utf8 (FStar.String.list_of_string s)
+
 
 (** [utf8_scan_chars max bs] — variable-width UTF-8 char scan, CHAR-count fuel
     (fstar-proofs §59 Fact 1).
@@ -79,6 +85,7 @@ let rec utf8_scan_chars (max: nat) (bs: list byte)
       | Some (c, rest) ->
           let (cs, rem) = utf8_scan_chars (max - 1) rest in
           (c :: cs, rem)
+
 
 (** [lemma_utf8_scan_terminate max cs r'] — the scan over
     [concatMap char_to_utf8 cs @ r'] terminates after consuming exactly [cs]
@@ -108,6 +115,7 @@ let rec lemma_utf8_scan_terminate (max: nat) (cs: list FStar.Char.char) (r': lis
         ()
 #pop-options
 
+
 (** [utf8_string_dec max input] — the UTF-8 string DECODER: [Seq.seq_to_list]
     at the boundary, list-level char scan (CHAR-count fuel), [string_of_list]
     reassembly.
@@ -124,11 +132,13 @@ let utf8_string_dec (max: nat) (input: byte_seq) : Tot (decode_result string) =
     else 0 in
   Inr (FStar.String.string_of_list cs, consumed_bytes)
 
+
 (** [utf8_string_enc s] — the UTF-8 string ENCODER: string → its full UTF-8
     byte sequence. *)
 unfold
 let utf8_string_enc (s: string) : Tot byte_seq =
   seq_of_list (utf8_string_to_bytes s)
+
 
 (** [utf8_string_wfcv max s] — guard: the string has at most [max] characters.
     Length-only — every [FStar.Char.char] is a valid Unicode scalar, so
@@ -140,11 +150,13 @@ unfold
 let utf8_string_wfcv (max: nat) (s: string) : bool =
   List.Tot.length (FStar.String.list_of_string s) <= max
 
+
 (** [utf8_string_wfcv_prop max s] — well-formed proposition — [True] (the
     boolean guard carries the check). *)
 unfold
 let utf8_string_wfcv_prop (max: nat) (s: string) : prop =
   True
+
 
 (** [utf8_string_rest_cond max s r] — suffix condition — the bounded-greedy
     3-disjunct shape: the run fills the whole char bound, OR the suffix is
@@ -157,7 +169,9 @@ let utf8_string_rest_cond (max: nat) (s: string) (r: byte_seq) : prop =
   n = max \/ Seq.length r = 0 \/
   (Seq.length r > 0 && None? (utf8_decode_one (Seq.seq_to_list r)))
 
+
 (* ── Roundtrip lemmas (alphabetical) ───────────────────────────────── *)
+
 
 (** [lemma_utf8_string_dec_consumed_bound max input] — consumed-count bound for
     [utf8_string_dec].
@@ -172,6 +186,7 @@ let lemma_utf8_string_dec_consumed_bound (max: nat) (input: byte_seq) : Lemma
   = ()
 #pop-options
 
+
 (** [lemma_utf8_string_dec_err_bound max input] — error-position bound for
     [utf8_string_dec] (never errors — always [Inr]). *)
 let lemma_utf8_string_dec_err_bound (max: nat) (input: byte_seq) : Lemma
@@ -179,6 +194,7 @@ let lemma_utf8_string_dec_err_bound (max: nat) (input: byte_seq) : Lemma
             | Inl err -> err.err_pos <= Seq.length input
             | _ -> True))
   = ()
+
 
 (** [lemma_utf8_string_roundtrip max s r] — roundtrip proof for [utf8_string]:
     [dec (enc s ++ r) == Inr (s, |enc s|)].
@@ -221,6 +237,7 @@ let lemma_utf8_string_roundtrip (max: nat) (s: string) (r: byte_seq)
     ()
 #pop-options
 
+
 (** [lemma_utf8_string_empty_roundtrip max] — concrete empty-string roundtrip
     vector: the empty string roundtrips against an empty suffix (CHAR-count 0,
     byte-count 0). *)
@@ -231,7 +248,9 @@ let lemma_utf8_string_empty_roundtrip (max: nat) : Lemma
   = lemma_utf8_string_roundtrip max "" Seq.empty
 #pop-options
 
+
 (* ── Combinator ─────────────────────────────────────────────────────── *)
+
 
 (** [utf8_string max] — the UTF-8-aware [codec string].
 

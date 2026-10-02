@@ -1,6 +1,7 @@
 (* Copyright 2026 Department of Code LLC.
    SPDX-License-Identifier: AGPL-3.0-or-later *)
 
+
 (**
 Data.Text.Codec.Zero — the empty-aware text combinator [text_chars0].
 
@@ -28,6 +29,7 @@ The empty case is the ONLY difference from [text_chars]: the decoder returns
 *)
 module Data.Text.Codec.Zero
 
+
 open Data.Codec
 open Data.Text.Codec.Chars
 open FStar.Seq
@@ -36,9 +38,12 @@ open FStar.Char
 open FStar.String
 open FStar.List.Tot
 
+
 module Seq = FStar.Seq
 
+
 (* ── Bounded greedy scan (build order: scanner → its lemmas) ──────── *)
+
 
 (** [scan_text_chars0 max pred input] — BOUNDED greedy scan of a [byte_seq],
     returning the longest matchable prefix (in order) up to [max] bytes —
@@ -54,6 +59,7 @@ let rec scan_text_chars0 (max: nat) (pred: FStar.Char.char -> bool) (input: byte
         b :: scan_text_chars0 (max - 1) pred (FStar.Seq.Properties.tail input)
       else []
     end
+
 
 (** [lemma_scan0_consumed_le_len max pred input] — the bounded greedy scan
     consumes at most [|input|] bytes. *)
@@ -74,6 +80,7 @@ let rec lemma_scan0_consumed_le_len (max: nat) (pred: FStar.Char.char -> bool) (
       end else ()
     end
 #pop-options
+
 
 (** [lemma_scan0_prefix max pred bs r] — a well-formed matchable prefix
     (possibly EMPTY) scans to its own length. *)
@@ -100,7 +107,9 @@ let rec lemma_scan0_prefix (max: nat) (pred: FStar.Char.char -> bool) (bs: list 
         ()
 #pop-options
 
+
 (* ── text_chars0 codec plumbing (decoder/encoder/guards) ────────────── *)
+
 
 (** [text_chars0_dec max pred input] — the [text_chars0] decoder: bounded
     greedy scan, then string conversion.
@@ -111,11 +120,13 @@ let text_chars0_dec (max: nat) (pred: FStar.Char.char -> bool) (input: byte_seq)
   let consumed = scan_text_chars0 max pred input in
   Inr (text_bytes_to_string consumed, List.Tot.length consumed)
 
+
 (** [text_chars0_enc pred s] — the [text_chars0] encoder: string to its byte
     sequence (empty → empty). *)
 unfold
 let text_chars0_enc (pred: FStar.Char.char -> bool) (s: string) : Tot byte_seq =
   seq_of_list (text_string_to_bytes s)
+
 
 (** [text_chars0_wfcv max pred s] — guard: the string is at most [max] chars,
     all-ASCII, every char satisfies [pred] — NO non-empty requirement (empty is
@@ -127,11 +138,13 @@ let text_chars0_wfcv (max: nat) (pred: FStar.Char.char -> bool) (s: string) : bo
   List.Tot.length chars <= max &&
   List.Tot.for_all (ascii_ok pred) chars
 
+
 (** [text_chars0_wfcv_prop max pred s] — well-formed proposition — [True]
     (the boolean guard carries the check). *)
 unfold
 let text_chars0_wfcv_prop (max: nat) (pred: FStar.Char.char -> bool) (s: string) : prop =
   True
+
 
 (** [text_chars0_rest_cond max pred s r] — suffix condition — the same
     3-disjunct bounded-greedy shape as [text_chars]: the run fills the bound,
@@ -143,7 +156,9 @@ let text_chars0_rest_cond (max: nat) (pred: FStar.Char.char -> bool) (s: string)
   let n = List.Tot.length (text_string_to_bytes s) in
   n = max \/ Seq.length r = 0 \/ (Seq.length r > 0 && not (byte_matchable pred (Seq.index r 0)))
 
+
 (* ── Roundtrip lemmas (alphabetical) ───────────────────────────────── *)
+
 
 (** [lemma_text_chars0_dec_consumed_bound max pred input] — consumed-count
     bound for [text_chars0_dec]. *)
@@ -155,6 +170,7 @@ let lemma_text_chars0_dec_consumed_bound (max: nat) (pred: FStar.Char.char -> bo
   = lemma_scan0_consumed_le_len max pred input
 #pop-options
 
+
 (** [lemma_text_chars0_dec_err_bound max pred input] — error-position bound for
     [text_chars0_dec] (never errors — always [Inr]). *)
 let lemma_text_chars0_dec_err_bound (max: nat) (pred: FStar.Char.char -> bool) (input: byte_seq) : Lemma
@@ -162,6 +178,7 @@ let lemma_text_chars0_dec_err_bound (max: nat) (pred: FStar.Char.char -> bool) (
             | Inl err -> err.err_pos <= Seq.length input
             | _ -> True))
   = ()
+
 
 (** [lemma_text_chars0_roundtrip max pred s r] — roundtrip proof for
     [text_chars0] (empty and non-empty alike).
@@ -201,6 +218,7 @@ let lemma_text_chars0_roundtrip (max: nat) (pred: FStar.Char.char -> bool) (s: s
     ()
 #pop-options
 
+
 (** [lemma_text_chars0_empty_roundtrip max pred] — concrete empty-roundtrip
     vector: the empty string roundtrips against an empty suffix, proving the
     zero-or-more (empty-representable) semantics at a closed value (the one
@@ -213,7 +231,9 @@ let lemma_text_chars0_empty_roundtrip (max: nat) (pred: FStar.Char.char -> bool)
   = lemma_text_chars0_roundtrip max pred "" Seq.empty
 #pop-options
 
+
 (* ── Combinator ─────────────────────────────────────────────────────── *)
+
 
 (** [text_chars0 max pred] — match ZERO or more ASCII chars satisfying [pred],
     as a [string].  The empty string is representable (encodes to zero bytes).

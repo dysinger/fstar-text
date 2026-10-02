@@ -1,6 +1,7 @@
 (* Copyright 2026 Department of Code LLC.
    SPDX-License-Identifier: AGPL-3.0-or-later *)
 
+
 (**
 Data.Text.Codec.UTF8 — UTF-8 encoding and decoding (RFC 3629).
 
@@ -23,6 +24,7 @@ decomposition identity [FStar.Math.Lemmas.lemma_div_mod].  Zero admits.
 *)
 module Data.Text.Codec.UTF8
 
+
 open Data.Codec
 open FStar.String
 open FStar.Char
@@ -31,11 +33,14 @@ open FStar.UInt32
 open FStar.List.Tot
 open FStar.Math.Lemmas
 
+
 module U8 = FStar.UInt8
 module U32 = FStar.UInt32
 module L = FStar.List.Tot
 
+
 (* ── Encode / decode (alphabetical) ─────────────────────────────────── *)
+
 
 (** [char_to_utf8 c] — encode a char as UTF-8 (1-4 bytes per RFC 3629 §3). *)
 let char_to_utf8 (c: FStar.Char.char) : list byte =
@@ -55,8 +60,10 @@ let char_to_utf8 (c: FStar.Char.char) : list byte =
      U8.uint_to_t (0x80 + ((code / 64) % 64));
      U8.uint_to_t (0x80 + (code % 64))]
 
+
 (** [is_cont b] — a byte is a UTF-8 continuation byte (0b10xxxxxx). *)
 let is_cont (b: byte) : bool = U8.v b >= 0x80 && U8.v b < 0xC0
+
 
 (** [mk_char cp] — construct a char from a code point only if it is a valid
     Unicode scalar value representable in [FStar.Char.char].
@@ -86,6 +93,7 @@ let mk_char (cp: int) : option FStar.Char.char =
   else if cp >= 0xE000 && cp <= 0x10FFFF then
     Some (FStar.Char.char_of_int cp)
   else None
+
 
 (** [utf8_decode_one bs] — decode one UTF-8 character from the head of a byte
     list (RFC 3629 §3).
@@ -153,6 +161,7 @@ let utf8_decode_one (bs: list byte) : option (FStar.Char.char & list byte) =
        | _ -> None)
     else None
 
+
 (** [utf8_bytes s] — a fixed UTF-8 string as a codec.
 
     Uses the [bytes] combinator (Data.Codec.Types combinator 6) over the
@@ -161,7 +170,9 @@ let utf8_decode_one (bs: list byte) : option (FStar.Char.char & list byte) =
 let utf8_bytes (s: string) : codec unit =
   bytes (L.concatMap char_to_utf8 (FStar.String.list_of_string s))
 
+
 (* ── Boundary + width lemmas (alphabetical) ─────────────────────────── *)
+
 
 (** [lemma_char_code_bound_pinned] — pin the F* [char_code] bound this
     decoder's [mk_char] gate relies on.
@@ -177,10 +188,12 @@ let lemma_char_code_bound_pinned () : Lemma
   (ensures mk_char 0xD7FF == None /\ mk_char 0xE000 == Some (FStar.Char.char_of_int 0xE000))
   = ()
 
+
 (** [lemma_char_to_utf8_len c] — [char_to_utf8] always produces 1-4 bytes. *)
 let lemma_char_to_utf8_len (c: FStar.Char.char) : Lemma
   (ensures 1 <= L.length (char_to_utf8 c) && L.length (char_to_utf8 c) <= 4)
   = ()
+
 
 (** [lemma_utf8_1byte c] — 1-byte ASCII case: code < 0x80. *)
 let lemma_utf8_1byte (c: FStar.Char.char) : Lemma
@@ -191,6 +204,7 @@ let lemma_utf8_1byte (c: FStar.Char.char) : Lemma
     assert (char_to_utf8 c == [U8.uint_to_t code]);
     assert (U8.v (U8.uint_to_t code) == code);
     ()
+
 
 (** [lemma_utf8_2byte c] — 2-byte case: 0x80 <= code < 0x800. *)
 #push-options "--z3rlimit 200"
@@ -212,6 +226,7 @@ let lemma_utf8_2byte (c: FStar.Char.char) : Lemma
     FStar.Char.char_of_u32_of_char c;
     ()
 #pop-options
+
 
 (** [lemma_utf8_3byte c] — 3-byte case: 0x800 <= code < 0x10000 (F* chars
     exclude surrogates). *)
@@ -239,6 +254,7 @@ let lemma_utf8_3byte (c: FStar.Char.char) : Lemma
     FStar.Char.char_of_u32_of_char c;
     ()
 #pop-options
+
 
 (** [lemma_utf8_4byte c] — 4-byte case: 0x10000 <= code <= 0x10FFFF. *)
 #push-options "--z3rlimit 400"
@@ -270,6 +286,7 @@ let lemma_utf8_4byte (c: FStar.Char.char) : Lemma
     ()
 #pop-options
 
+
 (** [lemma_utf8_roundtrip c] — exhaustive case analysis: encode-decode
     roundtrip for every char. *)
 #push-options "--z3rlimit 400"
@@ -282,6 +299,7 @@ let lemma_utf8_roundtrip (c: FStar.Char.char) : Lemma
     else lemma_utf8_4byte c
 #pop-options
 
+
 (** [lemma_utf8_encode_valid c] — every char encodes to 1-4 bytes and decodes
     back to [Some c]. *)
 let lemma_utf8_encode_valid (c: FStar.Char.char) : Lemma
@@ -291,7 +309,9 @@ let lemma_utf8_encode_valid (c: FStar.Char.char) : Lemma
   = lemma_utf8_roundtrip c;
     lemma_char_to_utf8_len c
 
+
 (* ── Prefix lemmas (alphabetical) ───────────────────────────────────── *)
+
 
 (** Prefix bridge: [utf8_decode_one] consumes exactly the head char's encoding
     and returns the SUFFIX unchanged, for a NON-EMPTY suffix [rest].  This is
@@ -303,6 +323,7 @@ let lemma_utf8_encode_valid (c: FStar.Char.char) : Lemma
     The empty-suffix form [utf8_decode_one (char_to_utf8 c) == Some (c, [])]
     is [lemma_utf8_roundtrip]; these prefix lemmas generalize it to arbitrary
     [rest] by the same per-byte-length case discipline. *)
+
 
 (** [lemma_utf8_1byte_prefix c rest] — 1-byte ASCII prefix with arbitrary
     suffix. *)
@@ -318,6 +339,7 @@ let lemma_utf8_1byte_prefix (c: FStar.Char.char) (rest: list byte) : Lemma
     assert (utf8_decode_one (b0 :: rest) == Some (c, rest));
     ()
 #pop-options
+
 
 (** [lemma_utf8_2byte_prefix c rest] — 2-byte prefix with arbitrary suffix. *)
 #push-options "--z3rlimit 400"
@@ -341,6 +363,7 @@ let lemma_utf8_2byte_prefix (c: FStar.Char.char) (rest: list byte) : Lemma
     FStar.Char.char_of_u32_of_char c;
     ()
 #pop-options
+
 
 (** [lemma_utf8_3byte_prefix c rest] — 3-byte prefix with arbitrary suffix. *)
 #push-options "--z3rlimit 400"
@@ -368,6 +391,7 @@ let lemma_utf8_3byte_prefix (c: FStar.Char.char) (rest: list byte) : Lemma
     FStar.Char.char_of_u32_of_char c;
     ()
 #pop-options
+
 
 (** [lemma_utf8_4byte_prefix c rest] — 4-byte prefix with arbitrary suffix. *)
 #push-options "--z3rlimit 400"
@@ -400,6 +424,7 @@ let lemma_utf8_4byte_prefix (c: FStar.Char.char) (rest: list byte) : Lemma
     FStar.Char.char_of_u32_of_char c;
     ()
 #pop-options
+
 
 (** [lemma_utf8_decode_prefix c rest] — exhaustive dispatcher:
     [utf8_decode_one] consumes exactly the head char's encoding and returns

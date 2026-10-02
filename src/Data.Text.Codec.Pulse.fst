@@ -1,6 +1,7 @@
 (* Copyright 2026 Department of Code LLC.
    SPDX-License-Identifier: AGPL-3.0-or-later *)
 
+
 (**
 Data.Text.Codec.Pulse — C-extractable text-encoding tag codec via Pulse + Custard.
 
@@ -41,6 +42,7 @@ Written for F* v2026.09.20 (Custard `--custard_backend C`).  Zero admits.
 module Data.Text.Codec.Pulse
 #lang-pulse
 
+
 open Pulse
 open Pulse.Lib.Reference
 module A = Pulse.Lib.Array
@@ -49,9 +51,12 @@ module U8 = FStar.UInt8
 module U32 = FStar.UInt32
 module Seq = FStar.Seq
 
+
 open FStar.Seq
 
+
 (* ── Types (alphabetical) ──────────────────────────────────────────── *)
+
 
 (** [text_enc] — the text encodings the tag byte selects. *)
 type text_enc =
@@ -59,24 +64,31 @@ type text_enc =
   | TE_UTF8
   | TE_UTF16
 
+
 (** [opt_text_enc] — option wrapper for the decode result (C-friendly, no
     [option]). *)
 type opt_text_enc =
   | OTE_None
   | OTE_Some of (text_enc & U32.t)
 
+
 (* ── Tag bytes — single source of truth (fstar-proofs §33) ──────────── *)
+
 
 (** [tag_ascii] — the ASCII tag byte (0x00). *)
 let tag_ascii : U8.t = 0x00uy
 
+
 (** [tag_utf8] — the UTF-8 tag byte (0x01). *)
 let tag_utf8 : U8.t = 0x01uy
+
 
 (** [tag_utf16] — the UTF-16 tag byte (0x02). *)
 let tag_utf16 : U8.t = 0x02uy
 
+
 (* ── Pure spec (noextract: not C-representable) ─────────────────────── *)
+
 
 (** [tag_of t] — pure spec: [text_enc] → tag byte. *)
 noextract
@@ -85,6 +97,7 @@ let tag_of (t: text_enc) : U8.t =
   | TE_ASCII -> tag_ascii
   | TE_UTF8 -> tag_utf8
   | TE_UTF16 -> tag_utf16
+
 
 (** [tag_to_type b] — pure spec: tag byte → [text_enc] option.
 
@@ -98,7 +111,9 @@ let tag_to_type (b: U8.t) : option text_enc =
   else if U8.eq b tag_utf16 then Some TE_UTF16
   else None
 
+
 (* ── Encode ─────────────────────────────────────────────────────────── *)
+
 
 (** [encode t buf off] — encode a text tag into [buf] at [off]; returns 1
     (bytes written).
@@ -128,7 +143,9 @@ fn encode (t: text_enc) (buf: A.array U8.t) (off: U32.t)
   1ul
 }
 
+
 (* ── Decode ─────────────────────────────────────────────────────────── *)
+
 
 (** [decode buf off] — decode a text tag from [buf] at [off].
 
@@ -167,7 +184,9 @@ fn decode (buf: A.array U8.t) (off: U32.t)
   }
 }
 
+
 (* ── Roundtrip lemmas (alphabetical) ────────────────────────────────── *)
+
 
 (** [lemma_roundtrip t] — pure roundtrip: encoding then decoding returns the
     original value. *)
@@ -176,6 +195,7 @@ let lemma_roundtrip (t: text_enc) : Lemma (tag_to_type (tag_of t) == Some t) =
   | TE_ASCII -> ()
   | TE_UTF8 -> ()
   | TE_UTF16 -> ()
+
 
 (** [lemma_pulse_roundtrip t buf off] — encode then decode a tag roundtrips.
 
@@ -200,6 +220,7 @@ fn lemma_pulse_roundtrip (t: text_enc) (buf: A.array U8.t) (off: U32.t)
   lemma_roundtrip t;
   (n, r)
 }
+
 
 (** [lemma_pulse_encode_decode_match t buf off] — master roundtrip across
     every tag.

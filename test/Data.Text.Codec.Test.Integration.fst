@@ -1,6 +1,7 @@
 (* Copyright 2026 Department of Code LLC.
    SPDX-License-Identifier: AGPL-3.0-or-later *)
 
+
 (**
 Data.Text.Codec.Test.Integration — Coverage anchors for all text symbols.
 
@@ -16,6 +17,7 @@ live in [Data.Text.Codec.Test.UTF8], [Data.Text.Codec.Test.Delims], and
 *)
 module Data.Text.Codec.Test.Integration
 
+
 open Data.Text.Codec
 open Data.Text.Codec.Chars
 open Data.Text.Codec.Delims
@@ -24,12 +26,15 @@ open Data.Text.Codec.UTF8
 open Data.Text.Codec.UTF8String
 open Data.Text.Codec.Pulse
 
+
 open FStar.UInt8
 open FStar.UInt32
 open FStar.Seq
 
+
 module U8 = FStar.UInt8
 module U32 = FStar.UInt32
+
 
 (* ── Why --admit_smt_queries true ──
    This module is a coverage anchor file.  Each [let _x = f] binding
@@ -40,146 +45,507 @@ module U32 = FStar.UInt32
    Real tests live in [Data.Text.Codec.Test.UTF8], [Data.Text.Codec.Test.Delims],
    and [Data.Text.Codec.Test.Roundtrip], which have zero admits.
 *)
+
+
 #push-options "--admit_smt_queries true"
 
+
 (* ── Concrete tests (zero-admit modules) ── *)
+
+
+(** [test_overlong_2byte] *)
 let _ct_utf8_01 = Data.Text.Codec.Test.UTF8.test_overlong_2byte
+
+
+(** [test_overlong_2byte_hi] *)
 let _ct_utf8_02 = Data.Text.Codec.Test.UTF8.test_overlong_2byte_hi
+
+
+(** [test_overlong_3byte] *)
 let _ct_utf8_03 = Data.Text.Codec.Test.UTF8.test_overlong_3byte
+
+
+(** [test_overlong_3byte_hi] *)
 let _ct_utf8_04 = Data.Text.Codec.Test.UTF8.test_overlong_3byte_hi
+
+
+(** [test_overlong_4byte] *)
 let _ct_utf8_05 = Data.Text.Codec.Test.UTF8.test_overlong_4byte
+
+
+(** [test_overlong_4byte_hi] *)
 let _ct_utf8_06 = Data.Text.Codec.Test.UTF8.test_overlong_4byte_hi
+
+
+(** [test_minimal_3byte] *)
 let _ct_utf8_07 = Data.Text.Codec.Test.UTF8.test_minimal_3byte
+
+
+(** [test_3byte_mid] *)
 let _ct_utf8_08 = Data.Text.Codec.Test.UTF8.test_3byte_mid
+
+
+(** [test_minimal_4byte] *)
 let _ct_utf8_09 = Data.Text.Codec.Test.UTF8.test_minimal_4byte
+
+
+(** [test_4byte_mid] *)
 let _ct_utf8_10 = Data.Text.Codec.Test.UTF8.test_4byte_mid
+
+
+(** [test_surrogate_d800] *)
 let _ct_utf8_11 = Data.Text.Codec.Test.UTF8.test_surrogate_d800
+
+
+(** [test_surrogate_dfff] *)
 let _ct_utf8_12 = Data.Text.Codec.Test.UTF8.test_surrogate_dfff
+
+
+(** [test_reject_d7ff] *)
 let _ct_utf8_13 = Data.Text.Codec.Test.UTF8.test_reject_d7ff
+
+
+(** [test_above_max] *)
 let _ct_utf8_14 = Data.Text.Codec.Test.UTF8.test_above_max
+
+
+(** [test_lead_out_of_range] *)
 let _ct_utf8_15 = Data.Text.Codec.Test.UTF8.test_lead_out_of_range
+
+
+(** [test_lone_continuation] *)
 let _ct_utf8_16 = Data.Text.Codec.Test.UTF8.test_lone_continuation
+
+
+(** [test_truncated_2byte] *)
 let _ct_utf8_17 = Data.Text.Codec.Test.UTF8.test_truncated_2byte
+
+
+(** [test_empty] *)
 let _ct_utf8_18 = Data.Text.Codec.Test.UTF8.test_empty
+
+
+(** [test_bad_continuation_3byte] *)
 let _ct_utf8_19 = Data.Text.Codec.Test.UTF8.test_bad_continuation_3byte
+
+
+(** [test_roundtrip_ascii] *)
 let _ct_utf8_20 = Data.Text.Codec.Test.UTF8.test_roundtrip_ascii
+
+
+(** [test_roundtrip_2byte] *)
 let _ct_utf8_21 = Data.Text.Codec.Test.UTF8.test_roundtrip_2byte
+
+
+(** [test_roundtrip_3byte] *)
 let _ct_utf8_22 = Data.Text.Codec.Test.UTF8.test_roundtrip_3byte
+
+
+(** [test_roundtrip_4byte] *)
 let _ct_utf8_23 = Data.Text.Codec.Test.UTF8.test_roundtrip_4byte
+
+
+(** [test_roundtrip_all] *)
 let _ct_utf8_24 = Data.Text.Codec.Test.UTF8.test_roundtrip_all
+
+
+(** [test_decode_prefix_all] *)
 let _ct_utf8_25 = Data.Text.Codec.Test.UTF8.test_decode_prefix_all
 
+
+(** [test_crlf_two_bytes] *)
 let _ct_delim_01 = Data.Text.Codec.Test.Delims.test_crlf_two_bytes
+
+
+(** [test_crlf_roundtrip] *)
 let _ct_delim_02 = Data.Text.Codec.Test.Delims.test_crlf_roundtrip
+
+
+(** [test_sp_one_byte] *)
 let _ct_delim_03 = Data.Text.Codec.Test.Delims.test_sp_one_byte
+
+
+(** [test_sp_roundtrip] *)
 let _ct_delim_04 = Data.Text.Codec.Test.Delims.test_sp_roundtrip
+
+
+(** [test_crlf_rejects_bare_cr] *)
 let _ct_delim_05 = Data.Text.Codec.Test.Delims.test_crlf_rejects_bare_cr
+
+
+(** [test_crlf_rejects_bare_lf] *)
 let _ct_delim_06 = Data.Text.Codec.Test.Delims.test_crlf_rejects_bare_lf
 
+
+(** [lemma_scan_max_zero] *)
 let _ct_rt_01 = Data.Text.Codec.Test.Roundtrip.lemma_scan_max_zero
+
+
+(** [test_text_chars_empty_input] *)
 let _ct_rt_02 = Data.Text.Codec.Test.Roundtrip.test_text_chars_empty_input
+
+
+(** [test_text_chars_max_zero] *)
 let _ct_rt_03 = Data.Text.Codec.Test.Roundtrip.test_text_chars_max_zero
+
+
+(** [test_byte_matchable_true] *)
 let _ct_rt_04 = Data.Text.Codec.Test.Roundtrip.test_byte_matchable_true
+
+
+(** [test_byte_matchable_nonascii] *)
 let _ct_rt_05 = Data.Text.Codec.Test.Roundtrip.test_byte_matchable_nonascii
+
+
+(** [test_ascii_ok_true] *)
 let _ct_rt_06 = Data.Text.Codec.Test.Roundtrip.test_ascii_ok_true
 
+
+(** [test_zero_empty_roundtrip] *)
 let _ct_zero_01 = Data.Text.Codec.Test.Zero.test_zero_empty_roundtrip
 
+
+(** [test_utf8_string_empty_roundtrip] *)
 let _ct_utf8str_01 = Data.Text.Codec.Test.UTF8String.test_utf8_string_empty_roundtrip
+
+
+(** [test_utf8_string_nonascii_roundtrip] *)
 let _ct_utf8str_02 = Data.Text.Codec.Test.UTF8String.test_utf8_string_nonascii_roundtrip
 
+
 (* ── Chars module ── *)
+
+
+(** [char_to_byte_trunc] *)
 let _ch0 = char_to_byte_trunc
+
+
+(** [byte_to_char] *)
 let _ch1 = byte_to_char
+
+
+(** [text_string_to_bytes] *)
 let _ch2 = text_string_to_bytes
+
+
+(** [text_bytes_to_string] *)
 let _ch3 = text_bytes_to_string
+
+
+(** [ascii_ok] *)
 let _ch4 = ascii_ok
+
+
+(** [byte_matchable] *)
 let _ch5 = byte_matchable
+
+
+(** [lemma_char_ascii] *)
 let _ch6 = lemma_char_ascii
+
+
+(** [lemma_chars_roundtrip_all] *)
 let _ch7 = lemma_chars_roundtrip_all
+
+
+(** [lemma_text_string_to_bytes_roundtrip] *)
 let _ch8 = lemma_text_string_to_bytes_roundtrip
 
+
 (* ── Codec module ── *)
+
+
+(** [scan_text_chars] *)
 let _cd0 = scan_text_chars
+
+
+(** [lemma_scan_consumed_le_len] *)
 let _cd1 = lemma_scan_consumed_le_len
+
+
+(** [lemma_scan_prefix] *)
 let _cd2 = lemma_scan_prefix
+
+
+(** [text_chars_dec] *)
 let _cd3 = text_chars_dec
+
+
+(** [text_chars_enc] *)
 let _cd4 = text_chars_enc
+
+
+(** [text_chars_wfcv] *)
 let _cd5 = text_chars_wfcv
+
+
+(** [text_chars_wfcv_prop] *)
 let _cd6 = text_chars_wfcv_prop
+
+
+(** [text_chars_rest_cond] *)
 let _cd7 = text_chars_rest_cond
+
+
+(** [lemma_text_chars_dec_err_bound] *)
 let _cd8 = lemma_text_chars_dec_err_bound
+
+
+(** [lemma_text_chars_dec_consumed_bound] *)
 let _cd9 = lemma_text_chars_dec_consumed_bound
+
+
+(** [lemma_text_chars_roundtrip] *)
 let _cd10 = lemma_text_chars_roundtrip
+
+
+(** [text_chars] *)
 let _cd11 = text_chars
 
+
 (* ── Delims module ── *)
+
+
+(** [crlf] *)
 let _dl0 = crlf
+
+
+(** [sp] *)
 let _dl1 = sp
 
+
 (* ── Zero module ── *)
+
+
+(** [scan_text_chars0] *)
 let _z0 = scan_text_chars0
+
+
+(** [lemma_scan0_consumed_le_len] *)
 let _z1 = lemma_scan0_consumed_le_len
+
+
+(** [lemma_scan0_prefix] *)
 let _z2 = lemma_scan0_prefix
+
+
+(** [text_chars0_dec] *)
 let _z3 = text_chars0_dec
+
+
+(** [text_chars0_enc] *)
 let _z4 = text_chars0_enc
+
+
+(** [text_chars0_wfcv] *)
 let _z5 = text_chars0_wfcv
+
+
+(** [text_chars0_wfcv_prop] *)
 let _z6 = text_chars0_wfcv_prop
+
+
+(** [text_chars0_rest_cond] *)
 let _z7 = text_chars0_rest_cond
+
+
+(** [lemma_text_chars0_dec_err_bound] *)
 let _z8 = lemma_text_chars0_dec_err_bound
+
+
+(** [lemma_text_chars0_dec_consumed_bound] *)
 let _z9 = lemma_text_chars0_dec_consumed_bound
+
+
+(** [lemma_text_chars0_roundtrip] *)
 let _z10 = lemma_text_chars0_roundtrip
+
+
+(** [text_chars0] *)
 let _z11 = text_chars0
+
+
+(** [lemma_text_chars0_empty_roundtrip] *)
 let _z12 = lemma_text_chars0_empty_roundtrip
 
+
 (* ── UTF8 module ── *)
+
+
+(** [char_to_utf8] *)
 let _u0 = char_to_utf8
+
+
+(** [is_cont] *)
 let _u1 = is_cont
+
+
+(** [mk_char] *)
 let _u2 = mk_char
+
+
+(** [utf8_decode_one] *)
 let _u3 = utf8_decode_one
+
+
+(** [lemma_char_to_utf8_len] *)
 let _u4 = lemma_char_to_utf8_len
+
+
+(** [lemma_utf8_1byte] *)
 let _u5 = lemma_utf8_1byte
+
+
+(** [lemma_utf8_2byte] *)
 let _u6 = lemma_utf8_2byte
+
+
+(** [lemma_utf8_3byte] *)
 let _u7 = lemma_utf8_3byte
+
+
+(** [lemma_utf8_4byte] *)
 let _u8 = lemma_utf8_4byte
+
+
+(** [lemma_utf8_roundtrip] *)
 let _u9 = lemma_utf8_roundtrip
+
+
+(** [lemma_utf8_encode_valid] *)
 let _u10 = lemma_utf8_encode_valid
+
+
+(** [utf8_bytes] *)
 let _u11 = utf8_bytes
+
+
+(** [lemma_char_code_bound_pinned] *)
 let _u12 = lemma_char_code_bound_pinned
+
+
+(** [lemma_utf8_1byte_prefix] *)
 let _u13 = lemma_utf8_1byte_prefix
+
+
+(** [lemma_utf8_2byte_prefix] *)
 let _u14 = lemma_utf8_2byte_prefix
+
+
+(** [lemma_utf8_3byte_prefix] *)
 let _u15 = lemma_utf8_3byte_prefix
+
+
+(** [lemma_utf8_4byte_prefix] *)
 let _u16 = lemma_utf8_4byte_prefix
+
+
+(** [lemma_utf8_decode_prefix] *)
 let _u17 = lemma_utf8_decode_prefix
 
+
 (* ── UTF8String module ── *)
+
+
+(** [utf8_string_to_bytes] *)
 let _us0 = utf8_string_to_bytes
+
+
+(** [utf8_scan_chars] *)
 let _us1 = utf8_scan_chars
+
+
+(** [lemma_utf8_scan_terminate] *)
 let _us2 = lemma_utf8_scan_terminate
+
+
+(** [utf8_string_dec] *)
 let _us3 = utf8_string_dec
+
+
+(** [utf8_string_enc] *)
 let _us4 = utf8_string_enc
+
+
+(** [utf8_string_wfcv] *)
 let _us5 = utf8_string_wfcv
+
+
+(** [utf8_string_wfcv_prop] *)
 let _us6 = utf8_string_wfcv_prop
+
+
+(** [utf8_string_rest_cond] *)
 let _us7 = utf8_string_rest_cond
+
+
+(** [lemma_utf8_string_dec_err_bound] *)
 let _us8 = lemma_utf8_string_dec_err_bound
+
+
+(** [lemma_utf8_string_dec_consumed_bound] *)
 let _us9 = lemma_utf8_string_dec_consumed_bound
+
+
+(** [lemma_utf8_string_roundtrip] *)
 let _us10 = lemma_utf8_string_roundtrip
+
+
+(** [utf8_string] *)
 let _us11 = utf8_string
+
+
+(** [lemma_utf8_string_empty_roundtrip] *)
 let _us12 = lemma_utf8_string_empty_roundtrip
+
 
 (* ── Pulse module (pure symbols only; the `fn`s are covered by real calls
    in Data.Text.Codec.Test.Pulse — anchoring an effectful `fn` from this
    non-#lang-pulse module would lose its stt spec, i.e. Warning 249). ── *)
+
+
+(** [TE_ASCII] *)
 let _l0 = TE_ASCII
+
+
+(** [TE_UTF8] *)
 let _l1 = TE_UTF8
+
+
+(** [TE_UTF16] *)
 let _l2 = TE_UTF16
+
+
+(** [OTE_None] *)
 let _l3 = OTE_None
+
+
+(** [OTE_Some] *)
 let _l4 = OTE_Some
+
+
+(** [tag_of] *)
 let _l5 = tag_of
+
+
+(** [tag_to_type] *)
 let _l6 = tag_to_type
+
+
+(** [lemma_roundtrip] *)
 let _l7 = lemma_roundtrip
+
+
+(** [tag_ascii] *)
 let _l8 = tag_ascii
+
+
+(** [tag_utf8] *)
 let _l9 = tag_utf8
+
+
+(** [tag_utf16] *)
 let _l10 = tag_utf16
+
 
 #pop-options
