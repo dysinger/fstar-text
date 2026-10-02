@@ -1,4 +1,4 @@
-# fstar-text — Agent Guide & Handoff
+# text — Agent Guide & Handoff
 
 `Data.Text.Codec` — verified text codec library, extracted from the xeno
 monorepo, built on `Data.Codec`.  F* source is 0-admit.  This file records the
@@ -10,7 +10,7 @@ completed Pulse port so the next session resumes cleanly.
    can hang forever.  **Always** run them **detached** and poll the log:
 
    ```bash
-   cd /Users/user/_/fstar-text
+   cd /Users/user/_/text
    rm -f /tmp/text-build.log
    nohup nix build .#checked --print-out-paths --no-link > /tmp/text-build.log 2>&1 &
    # … poll: tail /tmp/text-build.log ; ps -p $!
@@ -22,7 +22,7 @@ completed Pulse port so the next session resumes cleanly.
    it is now cached).
 
 2. **The F\* overlay in `flake.nix` MUST stay byte-identical to
-   `fstar-codec`/`fstar-basen`'s.**  Any comment/whitespace change to the
+   `codec`/`basen`'s.**  Any comment/whitespace change to the
    `buildPhase`/`installPhase` strings changes the derivation hash and forces a
    full F\* bootstrap.  Do NOT touch those strings.
 
@@ -49,7 +49,7 @@ Target names: `default = native`, `checked`, `ocaml`, `native`, `fsharp`.
 
 `Data.Text.Codec`'s pure modules `open Data.Codec` (which `include`s
 `Data.Codec.Types`), so the OCaml-extracted `.ml` files reference the *bare*
-top-level modules `Data_Codec_Types`/`Data_Codec`.  `fstar-codec`'s
+top-level modules `Data_Codec_Types`/`Data_Codec`.  `codec`'s
 `codec-ocaml` findlib package **wraps** its modules into a `Codec.*` namespace
 (dune `(wrapped true)` default), so the bare names are unbound.
 
@@ -59,7 +59,7 @@ codec's pure spec (`Data.Codec.Types` + `Data.Codec`) **locally** via
 library alongside text's own modules, and drops the `codec-ocaml` findlib
 dependency.  No `Custard` collision: only the codec *pure* spec is extracted,
 never its Pulse leaf.  This is the same "compile the codec spec locally,
-unwrapped" shape `fstar-codec` itself uses (there `pure-modules` *is* the codec
+unwrapped" shape `codec` itself uses (there `pure-modules` *is* the codec
 spec).
 
 ### Roll-forward fixes (landed, 0-admit preserved)
@@ -91,20 +91,20 @@ Data.Text.Codec.UTF8String — UTF-8-aware codec string
 Data.Text.Codec.Pulse    — C-extractable text-encoding tag codec (Custard)
 ```
 
-The Pulse leaf is trivial compared to `fstar-codec`/`fstar-basen`: a single
+The Pulse leaf is trivial compared to `codec`/`basen`: a single
 1-byte tag (`TE_ASCII` 0x00 / `TE_UTF8` 0x01 / `TE_UTF16` 0x02), `encode`/
 `decode` (`A.array U8.t`, `fn`), plus `lemma_roundtrip` (pure),
 `lemma_pulse_roundtrip`, `lemma_pulse_encode_decode_match`.  No varint, no
 multi-byte arithmetic — so none of the varint/word32 SMT-hang complexity from
-`fstar-codec` applies here.
+`codec` applies here.
 
 ## The codec dependency
 
-`fstar-text` consumes `Data.Codec` from the **published** `dysinger/fstar-codec`
-repo (flake input `fstar-codec`, pinned in `flake.lock`), NOT a vendored copy.
+`text` consumes `Data.Codec` from the **published** `dysinger/codec`
+repo (flake input `codec`, pinned in `flake.lock`), NOT a vendored copy.
 The KaRaMeL-era vendored `./codec/` tree was deleted.  `codec-src` (the flake
 input tree) provides the `.fst` sources for `--include`; `codec-checked`
-(`fstar-codec.packages.<system>.checked`) seeds the `.checked` cache.
+(`codec.packages.<system>.checked`) seeds the `.checked` cache.
 
 ## Build commands
 
@@ -118,7 +118,7 @@ nix develop && make check   # dev loop (no nix)
 
 ## Reference
 
-- Canonical references: `../fstar-codec` (the codec, incl. its `Data.Codec.Pulse`)
-  and `../fstar-basen` (the same downstream-dependency shape, `Data.BaseN.Pulse`).
+- Canonical references: `../codec` (the codec, incl. its `Data.Codec.Pulse`)
+  and `../basen` (the same downstream-dependency shape, `Data.BaseN.Pulse`).
 - The F\* skill: `~/.pi/agent/skills/fstar/fstar-2026.09.20/SKILL.md`
   (Custard, Pulse idiom, `U8.v`/`U32.v` → `Int.Cast`, the dead-Low\* delta).

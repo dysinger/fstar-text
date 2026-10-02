@@ -1,7 +1,7 @@
 <div align="center">
   <h1>License</h1>
-  <p><strong>fstar-codec</strong> — a formally verified, bidirectional
-  serialization framework written in F\*.</p>
+  <p><strong>text</strong> — a formally verified, text codec library
+  (UTF-8 / ASCII / delimiters) written in F\*.</p>
 </div>
 
 ---

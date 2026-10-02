@@ -1,7 +1,7 @@
 # Copyright 2026 Department of Code LLC.
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# fstar-text — Data.Text.Codec verified text codec library.
+# text — Data.Text.Codec verified text codec library.
 #
 # Takes the F* toolchain as concrete derivations (no `pkgs` blob, no overlay
 # assumption, no module-name/order arguments).  Module names and their
@@ -38,7 +38,7 @@
 let
   inherit (stdenv) mkDerivation;
 
-  # Package name.  The repo/flake are "fstar-text", but the internal
+  # Package name.  The package is "text" (git repo "fstar-text"), but the internal
   # derivation/artifact names drop the "fstar-" prefix.
   pname = "text";
 
