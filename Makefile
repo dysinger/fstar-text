@@ -45,8 +45,6 @@ FSTAR_FLAGS = --no_default_includes \
 
 # Source modules in DEPENDENCY ORDER (leaf modules first).
 #
-# Data.Text.Codec.Pulse is the Custard-era Pulse leaf (the old KaRaMeL
-# Data.Text.Codec.Low was deleted with the Low* stdlib in v2026.09.20).
 SRC_MODS := Data.Text.Codec.Chars Data.Text.Codec Data.Text.Codec.Delims \
             Data.Text.Codec.Zero Data.Text.Codec.UTF8 Data.Text.Codec.UTF8String \
             Data.Text.Codec.Pulse

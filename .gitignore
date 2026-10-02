@@ -5,24 +5,22 @@
 result
 result-*
 
-# Makefile build output (check/krml/demo all write under out/)
+# Makefile build output (check reads/writes under out/)
 out/
 
 # F* `.checked` cache directory (hand-run `fstar.exe --cache_checked_modules`
-# without `--odir` drops the cache in cwd/ `cache/`).
+# without `--odir` drops the cache in cwd/ `cache/`).  The Makefile and
+# default.nix both pass `--odir`, so this is only for bare hand-runs.
 cache/
 
-# Throwaway Pulse-port spike scratch dir (see AGENTS.md § Pulse-port spike)
-spike/
-
 # F* `.checked` cache, in case `fstar.exe` is run by hand without `--odir`.
-# (The Makefile and default.nix both pass `--odir`, which routes these into
-# out/ or the nix store — but a bare `fstar.exe` run drops them in cwd.)
 *.checked
-*.krml
 
 # C compiler artifacts, in case `make` or a hand-run compile drops them in cwd.
 *.o
+
+# Empty scratch dirs
+runtime/
 
 # SMT query dumps from `fstar.exe --log_queries` (hang diagnosis)
 queries-*.smt2

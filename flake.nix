@@ -18,11 +18,6 @@
     # `dysinger/fstar-codec` GitHub repo (pinned to its HEAD commit in
     # flake.lock).
     fstar-codec.url = "github:dysinger/fstar-codec";
-    # No karamel input.  karamel is an in-tree SUBMODULE of F* that upstream's
-    # .nix/fstar.nix synthesizes (cp -r karamel-src) only to run `make -C
-    # karamel install`, which installs the `krml` binary + headers.  We do not
-    # use krml (fstar.exe + fstar.lib are all our targets consume), so karamel
-    # is dropped entirely and the karamel install step is neutralized.
   };
 
   outputs =
@@ -65,11 +60,6 @@
                 z3 = prev.callPackage (inputs.fstar + "/.nix/z3.nix") { };
                 version = "2026.09.20+lsp";
 
-                # No karamel.  fstar.nix takes `karamel-src` and
-                # `karamelOcamlDeps` only to build/install the in-tree karamel
-                # submodule (→ the `krml` binary we don't use).  Pass a no-op
-                # empty dir + empty deps, and neutralize the karamel install
-                # step below.
                 fstar =
                   (ocamlPackages.callPackage (inputs.fstar + "/.nix/fstar.nix") {
                     inherit version z3;
@@ -90,22 +80,11 @@
                       # not re-specify it, unlike fsharp-lib.src).
                       buildPhase = ''
                         export PATH="${z3}/bin:$PATH"
-                        # Neutralize the in-tree karamel submodule: set
-                        # FSTAR_USE_KRML_EXE=1 so the `karamel` phony target is a
-                        # no-op (it otherwise errors: "Run git submodule init"), and
-                        # stub karamel/Makefile so the unconditional `make -C karamel
-                        # install` in install-stage / install is a NOP.  We don't use
-                        # the krml binary / headers.
                         export FSTAR_USE_KRML_EXE=1 KRML_EXE=/bin/true
                         mkdir -p karamel
                         printf 'all:\n\t@true\ninstall:\n\t@true\n' > karamel/Makefile
                         make OTHERFLAGS='--z3rlimit 20 --retry 3'
                       '';
-                      # fstar.nix's installPhase runs `make install`, whose top-level
-                      # `install:` target unconditionally does `$(MAKE) -C karamel
-                      # install LOWSTAR=false`.  We dropped karamel, so stub a no-op
-                      # karamel/Makefile first so that step is a NOP.  Everything else
-                      # (fstar.exe, fstar.lib, ulib, ulib.checked) installs normally.
                       installPhase = ''
                         export FSTAR_USE_KRML_EXE=1 KRML_EXE=/bin/true
                         mkdir -p karamel

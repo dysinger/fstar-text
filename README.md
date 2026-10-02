@@ -1,4 +1,4 @@
-# Data.Text.Codec — Verified Text Codec Library
+# text — verified text codec library
 
 A formally verified text codec library in F*, built on the record-based
 [Data.Codec] combinator framework.  Provides the bounded-greedy

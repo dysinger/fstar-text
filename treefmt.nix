@@ -16,7 +16,6 @@
 # Markdown (`*.md`) is also left out: the prose docs (AGENTS.md, README.md,
 # API.md, LICENSE/CHANGELOG) are hand-written with intentional double-space
 # sentence gaps and `*`/`F*` emphasis that prettier rewrites into churn.
-# `../fstar-codec/treefmt.nix` makes the same call (it excludes `*.md`).
 
 _: {
   projectRootFile = "flake.nix";
