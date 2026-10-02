@@ -39,7 +39,7 @@ keep [Data.Text.Codec] a single-combinator module (fstar-proofs §45).
   [digits_to_int max_len].  An unbounded greedy scan is not a valid
   invertible-syntax codec (fstar-proofs §43).
 - **C extraction.**  [Data.Text.Codec.Pulse] extracts to C11 via Custard
-  (`--custard_backend C`, no KaRaMeL).
+  (`--custard_backend C`).
 
 ## text_chars API
 

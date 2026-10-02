@@ -4,9 +4,7 @@
 (**
 Data.Text.Codec.Pulse — C-extractable text-encoding tag codec via Pulse + Custard.
 
-The Custard-era replacement for the retired KaRaMeL
-[Data.Text.Codec.Low] (which used [LowStar.Buffer]/[Stack]; both namespaces
-were removed from F* ≥ v2026.09.20).  A single-byte tag selects the text
+A single-byte tag selects the text
 encoding of a subsequent run — [TE_ASCII] (0x00), [TE_UTF8] (0x01), or
 [TE_UTF16] (0x02) — written/read through a [Pulse.Lib.Array.array].
 
